@@ -1,0 +1,6 @@
+# Copy this file to local.properties on your machine if Flutter does not generate it automatically.
+# Example Windows:
+# flutter.sdk=C:\\src\\flutter
+# sdk.dir=C:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
+flutter.sdk=/path/to/flutter
+sdk.dir=/path/to/android/sdk

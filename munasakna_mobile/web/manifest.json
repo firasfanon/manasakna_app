@@ -1,0 +1,20 @@
+{
+  "name": "مناسكنا",
+  "short_name": "مناسكنا",
+  "description": "تطبيق مناسكنا لخدمات الحج والعمرة.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fffaf0",
+  "theme_color": "#0F5B43",
+  "orientation": "portrait-primary",
+  "dir": "rtl",
+  "lang": "ar",
+  "id": "ps.palwakf.manasikuna",
+  "scope": ".",
+  "categories": [
+    "education",
+    "travel",
+    "utilities"
+  ],
+  "prefer_related_applications": false
+}

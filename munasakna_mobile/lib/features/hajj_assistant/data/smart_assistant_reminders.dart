@@ -1,0 +1,50 @@
+import '../domain/models/smart_hajj_assistant_models.dart';
+
+const List<SmartAssistantReminder> smartAssistantDevelopmentReminders = [
+  SmartAssistantReminder(
+    id: 'before_miqat_prepare_ihram',
+    title: 'استعد للإحرام',
+    message: 'قبل الميقات راجع نوع نسكك، وتأكد من ملابس الإحرام، وتعرّف إلى محظورات الإحرام.',
+    phaseLabel: 'قبل الميقات',
+    kind: AssistantResponseKind.reminder,
+    actionLabel: 'فتح دليل الإحرام',
+    isCritical: true,
+  ),
+  SmartAssistantReminder(
+    id: 'arafah_water_group',
+    title: 'يوم عرفة: ابق مع مجموعتك',
+    message: 'أكثر من الدعاء والذكر، واشرب الماء، ولا تتحرك منفردًا بعيدًا عن الحملة.',
+    phaseLabel: 'عرفة',
+    kind: AssistantResponseKind.alert,
+    actionLabel: 'فتح إرشادات عرفة',
+    requiresLocation: true,
+    isCritical: true,
+  ),
+  SmartAssistantReminder(
+    id: 'muzdalifah_rest_stones',
+    title: 'مزدلفة: راحة واستعداد',
+    message: 'اتبع التفويج، واسترح قدر الإمكان، وجهّز حصى الرمي إن تيسر دون مزاحمة.',
+    phaseLabel: 'مزدلفة',
+    kind: AssistantResponseKind.reminder,
+    actionLabel: 'فتح دليل مزدلفة',
+  ),
+  SmartAssistantReminder(
+    id: 'jamarat_crowd_safety',
+    title: 'الجمرات: السلامة أولًا',
+    message: 'لا تزاحم، التزم بتوقيت المجموعة، واستعن بالمرشد عند الحاجة أو في حالات كبار السن.',
+    phaseLabel: 'أيام التشريق',
+    kind: AssistantResponseKind.alert,
+    actionLabel: 'فتح إرشادات الرمي',
+    requiresLocation: true,
+    isCritical: true,
+  ),
+  SmartAssistantReminder(
+    id: 'after_return_survey',
+    title: 'بعد العودة: قيّم التجربة',
+    message: 'أكمل استبيان الحج وسجل الملاحظات؛ هذا يساعد نسك على تحسين الخدمة في المواسم القادمة.',
+    phaseLabel: 'بعد العودة',
+    kind: AssistantResponseKind.reminder,
+    actionLabel: 'فتح الاستبيان',
+    requiresNusukData: true,
+  ),
+];
