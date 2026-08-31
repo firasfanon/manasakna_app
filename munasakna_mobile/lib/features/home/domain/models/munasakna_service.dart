@@ -311,6 +311,14 @@ const List<MunasaknaService> munasaknaInitialServices = [
     isImportant: true,
   ),
   MunasaknaService(
+    key: MunasaknaServiceKey.nusukBridgePreview,
+    titleAr: 'معاينة جسر نسك',
+    subtitleAr: 'DTO وAPI قبل الربط',
+    icon: Icons.account_tree_outlined,
+    route: MunasaknaRoutes.nusukBridgePreview,
+    isImportant: true,
+  ),
+  MunasaknaService(
     key: MunasaknaServiceKey.finalBetaSmoke,
     titleAr: 'دخان بيتا النهائي',
     subtitleAr: 'اختبارات وتوريث قبل الاعتماد',

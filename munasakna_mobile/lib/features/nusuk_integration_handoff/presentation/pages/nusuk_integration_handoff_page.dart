@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../app/router/munasakna_routes.dart';
 
 import '../../../../app/theme/munasakna_theme.dart';
 import '../../../../core/widgets/beta_batch_widgets.dart';
@@ -63,6 +64,21 @@ class NusukIntegrationHandoffPage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
+          InfoSectionCard(
+            title: 'معاينة جسر نسك',
+            subtitle: 'صفحة عملية تعرض عقود القراءة والكتابة، الحقول، Payload التجريبي، وقواعد الفشل الآمن قبل الربط الحقيقي.',
+            icon: Icons.preview_outlined,
+            children: [
+              BetaRouteTile(
+                title: 'فتح معاينة جسر نسك',
+                subtitle: 'مراجعة DTO وAPI المقترحة دون تسجيل دخول أو سيرفر.',
+                icon: Icons.account_tree_outlined,
+                route: MunasaknaRoutes.nusukBridgePreview,
+                color: MunasaknaTheme.zamzamBlue,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           const InfoSectionCard(
             title: 'قرار الانضمام المقترح',
             icon: Icons.rule_outlined,
