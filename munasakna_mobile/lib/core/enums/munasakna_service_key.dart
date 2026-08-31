@@ -58,4 +58,5 @@ enum MunasaknaServiceKey {
   finalBetaSmoke,
   betaContentUxAudit,
   nusukIntegrationHandoff,
+  nusukBridgePreview,
 }

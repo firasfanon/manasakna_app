@@ -1,30 +1,32 @@
-# Session Handoff — Manasikuna v2.9.1
+# Session Handoff — Manasikuna v292
 
-## Baseline
-`manasikuna_v291_beta_content_ux_audit_nusuk_handoff.zip`
+## Baseline الحالي
+`manasikuna_v292_nusuk_bridge_preview_batch_01.zip`
 
-## الحالة
-- تم البناء فوق v290 المستقرة.
-- آخر نتيجة اختبار معروفة على v290: All tests passed.
-- v291 تحتاج تشغيل `flutter test` محليًا لاعتمادها كـ baseline مستقر.
+## آخر حالة مؤكدة
+- v291 كان مستقرًا محليًا بعد `All tests passed`.
+- v292 أضاف Nusuk Bridge Preview Batch 01 دون تفعيل تسجيل دخول أو اتصال حقيقي.
 
-## المنجز
-- إضافة صفحة تدقيق المحتوى والواجهة.
-- إضافة صفحة تقرير نسك للتكامل.
-- إضافة تقرير تفصيلي موجه لنسك.
-- إضافة وثيقة Beta Content & UX Audit.
+## المنجز في v292
+- صفحة `معاينة جسر نسك`.
+- Registry لعقود preview.
+- نماذج preview للحقول، الخصوصية، حالة العقد، وبوابات الربط.
+- ربط الصفحة بالراوتر، الخدمات، جاهزية بيتا، وتقرير نسك للتكامل.
 - تحديث الدليل الشامل.
-- رفع النسخة إلى 2.9.1+33.
 
-## غير المنجز عمدًا
-- لا تسجيل دخول.
-- لا اتصال حقيقي بنسك.
-- لا بيانات حقيقية.
-- لا رفع وثائق.
-- لا تغيير في قواعد الفتوى أو المساعد خارج المصفوفة.
+## لا يزال ممنوعًا الآن
+- تفعيل تسجيل الدخول.
+- استخدام بيانات حقيقية.
+- تفعيل Supabase/Remote Repository.
+- كتابة شكاوى أو استبيانات إلى السيرفر.
 
 ## نقطة الاستئناف
-1. تشغيل:
-   `flutter clean && flutter pub get && flutter test`
-2. إذا نجحت الاختبارات: اعتماد v291.
-3. الدفعة التالية: Nusuk Bridge Preview Batch 01.
+بعد نجاح `flutter test` محليًا على v292، تكون الخطوة التالية المقترحة:
+`Nusuk Bridge Preview Batch 02` لإضافة DTO وتحويلات mock وفصل Local/Remote contracts دون اتصال فعلي.
+
+
+## v2.9.3+35 — Assistant Voice Material Hotfix
+
+- أُغلق خطأ اختبار Flutter الخاص بوجود `SwitchListTile` داخل خلفية مزخرفة دون `Material` مستقل.
+- تم لف خيار الإرسال التلقائي في صفحة المساعد الصوتي بـ `Material(color: Colors.transparent)`.
+- لا يوجد تسجيل دخول، ولا ربط حقيقي مع نسك، ولا بيانات حقيقية، ولا اعتماد إنتاج.

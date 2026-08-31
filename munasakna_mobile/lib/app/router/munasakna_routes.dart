@@ -60,4 +60,5 @@ class MunasaknaRoutes {
   static const String finalBetaSmoke = '/final-beta-smoke';
   static const String betaContentUxAudit = '/beta-content-ux-audit';
   static const String nusukIntegrationHandoff = '/nusuk-integration-handoff';
+  static const String nusukBridgePreview = '/nusuk-bridge-preview';
 }

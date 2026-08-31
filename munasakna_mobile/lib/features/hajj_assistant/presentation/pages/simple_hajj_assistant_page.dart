@@ -441,13 +441,16 @@ class _VoiceInputPanel extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: SwitchListTile.adaptive(
-                  value: autoSend,
-                  onChanged: onAutoSendChanged,
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('إرسال السؤال تلقائيًا بعد الالتقاط'),
-                  subtitle: const Text('يمكن إيقافها لمراجعة النص قبل الإرسال'),
+                child: Material(
+                  color: Colors.transparent,
+                  child: SwitchListTile.adaptive(
+                    value: autoSend,
+                    onChanged: onAutoSendChanged,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('إرسال السؤال تلقائيًا بعد الالتقاط'),
+                    subtitle: const Text('يمكن إيقافها لمراجعة النص قبل الإرسال'),
+                  ),
                 ),
               ),
               if (isListening) ...[

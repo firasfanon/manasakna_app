@@ -61,6 +61,7 @@ import '../../features/platform_readiness/presentation/pages/platform_readiness_
 import '../../features/final_beta_smoke/presentation/pages/final_beta_smoke_page.dart';
 import '../../features/beta_content_audit/presentation/pages/beta_content_ux_audit_page.dart';
 import '../../features/nusuk_integration_handoff/presentation/pages/nusuk_integration_handoff_page.dart';
+import '../../features/nusuk_bridge_preview/presentation/pages/nusuk_bridge_preview_page.dart';
 import 'munasakna_routes.dart';
 
 final GoRouter munasaknaRouter = GoRouter(
@@ -127,5 +128,6 @@ final GoRouter munasaknaRouter = GoRouter(
     GoRoute(path: MunasaknaRoutes.finalBetaSmoke, builder: (context, state) => const FinalBetaSmokePage()),
     GoRoute(path: MunasaknaRoutes.betaContentUxAudit, builder: (context, state) => const BetaContentUxAuditPage()),
     GoRoute(path: MunasaknaRoutes.nusukIntegrationHandoff, builder: (context, state) => const NusukIntegrationHandoffPage()),
+    GoRoute(path: MunasaknaRoutes.nusukBridgePreview, builder: (context, state) => const NusukBridgePreviewPage()),
   ],
 );

@@ -143,6 +143,13 @@ class BetaReadinessPage extends StatelessWidget {
                 icon: Icons.cloud_sync_outlined,
                 route: MunasaknaRoutes.nusukContracts,
               ),
+              const SizedBox(height: 10),
+              _BetaLinkTile(
+                title: 'معاينة جسر نسك',
+                subtitle: 'DTO وPayload وقواعد فشل آمن قبل الربط الحقيقي.',
+                icon: Icons.preview_outlined,
+                route: MunasaknaRoutes.nusukBridgePreview,
+              ),
             ],
           ),
           const SizedBox(height: 12),
