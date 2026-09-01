@@ -34,7 +34,7 @@ class MunasaknaAppScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      extendBody: true,
+      extendBody: false,
       appBar: AppBar(
         titleSpacing: 0,
         backgroundColor: Colors.transparent,
@@ -55,7 +55,8 @@ class MunasaknaAppScaffold extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w900, color: Colors.white),
               ),
             ),
           ],
@@ -70,17 +71,21 @@ class MunasaknaAppScaffold extends StatelessWidget {
             : null,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: MunasaknaTheme.kiswahGold.withValues(alpha: 0.34)),
+          child: Container(
+              height: 1,
+              color: MunasaknaTheme.kiswahGold.withValues(alpha: 0.34)),
         ),
       ),
       floatingActionButton: floatingActionButton,
-      bottomNavigationBar: showBottomNav ? MunasaknaBottomNav(selectedIndex: bottomNavIndex) : null,
+      bottomNavigationBar: showBottomNav
+          ? MunasaknaBottomNav(selectedIndex: bottomNavIndex)
+          : null,
       body: ManasikunaBackground(
         child: SafeArea(
           top: false,
           child: ListView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: EdgeInsets.fromLTRB(16, 14, 16, showBottomNav ? 104 : 28),
+            padding: EdgeInsets.fromLTRB(16, 14, 16, showBottomNav ? 24 : 28),
             children: [
               if (showPageBanner) ...[
                 ManasikunaPageBanner(
