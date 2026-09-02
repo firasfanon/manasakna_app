@@ -51,24 +51,25 @@ class Manasikuna1448Runtime {
     DateTime? now,
   }) async {
     final clock = (now ?? DateTime.now()).toUtc();
-    final activationValid = activation == null || activation.isValidAt(clock);
 
-    if (!activationValid && !requestedMode.isStandalone) {
-      return _resolveStandalone(
-        fallbackReasonCode: 'activation_expired_or_not_yet_valid',
-      );
+    if (!requestedMode.isStandalone) {
+      if (activation == null) {
+        return _resolveStandalone(fallbackReasonCode: 'activation_missing');
+      }
+      if (!activation.isValidAt(clock)) {
+        return _resolveStandalone(
+          fallbackReasonCode: 'activation_expired_or_not_yet_valid',
+        );
+      }
     }
 
     switch (requestedMode) {
       case ManasikunaIntegrationMode.standalone:
         return _resolveStandalone();
       case ManasikunaIntegrationMode.campaignConnected:
-        return _resolveCampaign(
-          activation: activation,
-          fallbackReasonCode: 'campaign_provider_unavailable_or_empty',
-        );
+        return _resolveCampaign(activation: activation!);
       case ManasikunaIntegrationMode.nusukConnected:
-        return _resolveNusukThenFallback(activation: activation);
+        return _resolveNusukThenFallback(activation: activation!);
     }
   }
 
@@ -89,28 +90,86 @@ class Manasikuna1448Runtime {
   }
 
   Future<Manasikuna1448ResolvedContext> _resolveCampaign({
-    ActivationCredential? activation,
+    required ActivationCredential activation,
     String? fallbackReasonCode,
   }) async {
     final profileProvider = campaignProfileProvider;
     final operationalProvider = campaignOperationalProvider;
 
     if (profileProvider == null || operationalProvider == null) {
-      return _resolveStandalone(fallbackReasonCode: fallbackReasonCode);
+      return _resolveStandalone(
+        fallbackReasonCode: _fallbackTrail(
+          fallbackReasonCode,
+          'campaign_provider_unavailable',
+        ),
+      );
     }
 
-    final profile = await profileProvider.loadProfile(activation: activation);
-    if (profile == null || !profile.isActivationEligible) {
-      return _resolveStandalone(fallbackReasonCode: fallbackReasonCode);
+    OfficialPilgrimSeed? profile;
+    try {
+      profile = await profileProvider.loadProfile(activation: activation);
+    } catch (_) {
+      return _resolveStandalone(
+        fallbackReasonCode: _fallbackTrail(
+          fallbackReasonCode,
+          'campaign_profile_provider_error',
+        ),
+      );
     }
 
-    final pack = await operationalProvider.loadCampaignPack(
-      pilgrim: profile,
-      activation: activation,
-    );
+    if (profile == null) {
+      return _resolveStandalone(
+        fallbackReasonCode: _fallbackTrail(
+          fallbackReasonCode,
+          'campaign_profile_missing',
+        ),
+      );
+    }
+
+    if (!profile.isActivationEligible) {
+      return _resolveStandalone(
+        fallbackReasonCode: _fallbackTrail(
+          fallbackReasonCode,
+          'campaign_profile_not_approved',
+        ),
+      );
+    }
+
+    CampaignOperationalPack? pack;
+    try {
+      pack = await operationalProvider.loadCampaignPack(
+        pilgrim: profile,
+        activation: activation,
+      );
+    } catch (_) {
+      return _resolveStandalone(
+        fallbackReasonCode: _fallbackTrail(
+          fallbackReasonCode,
+          'campaign_operational_provider_error',
+        ),
+      );
+    }
 
     if (pack == null) {
-      return _resolveStandalone(fallbackReasonCode: fallbackReasonCode);
+      return _resolveStandalone(
+        fallbackReasonCode: _fallbackTrail(
+          fallbackReasonCode,
+          'campaign_pack_missing',
+        ),
+      );
+    }
+
+    if (!_campaignPackMatchesContext(
+      profile: profile,
+      pack: pack,
+      activation: activation,
+    )) {
+      return _resolveStandalone(
+        fallbackReasonCode: _fallbackTrail(
+          fallbackReasonCode,
+          'campaign_pack_context_mismatch',
+        ),
+      );
     }
 
     return Manasikuna1448ResolvedContext(
@@ -127,40 +186,111 @@ class Manasikuna1448Runtime {
   }
 
   Future<Manasikuna1448ResolvedContext> _resolveNusukThenFallback({
-    ActivationCredential? activation,
+    required ActivationCredential activation,
   }) async {
     final provider = nusukProvider;
 
-    if (provider != null && provider.isOfficiallyAvailable) {
-      try {
-        final profile = await provider.loadProfile(activation: activation);
-        if (profile != null && profile.isActivationEligible) {
-          final pack = await provider.loadCampaignPack(
-            pilgrim: profile,
-            activation: activation,
-          );
-          return Manasikuna1448ResolvedContext(
-            profile: profile,
-            campaignPack: pack,
-            resolution: Manasikuna1448RuntimeResolution(
-              requestedMode: requestedMode,
-              effectiveMode: ManasikunaIntegrationMode.nusukConnected,
-              profileProviderId: provider.providerId,
-              campaignProviderId: provider.providerId,
-            ),
-          );
-        }
-      } catch (_) {
-        return _resolveCampaign(
-          activation: activation,
-          fallbackReasonCode: 'nusuk_provider_error',
-        );
-      }
+    if (provider == null || !provider.isOfficiallyAvailable) {
+      return _resolveCampaign(
+        activation: activation,
+        fallbackReasonCode: 'nusuk_provider_not_officially_available',
+      );
     }
 
-    return _resolveCampaign(
-      activation: activation,
-      fallbackReasonCode: 'nusuk_provider_not_officially_available',
-    );
+    try {
+      final profile = await provider.loadProfile(activation: activation);
+
+      if (profile == null) {
+        return _resolveCampaign(
+          activation: activation,
+          fallbackReasonCode: 'nusuk_profile_missing',
+        );
+      }
+
+      if (!profile.isActivationEligible) {
+        return _resolveCampaign(
+          activation: activation,
+          fallbackReasonCode: 'nusuk_profile_not_approved',
+        );
+      }
+
+      final pack = await provider.loadCampaignPack(
+        pilgrim: profile,
+        activation: activation,
+      );
+
+      if (pack == null) {
+        return _resolveCampaign(
+          activation: activation,
+          fallbackReasonCode: 'nusuk_campaign_pack_missing',
+        );
+      }
+
+      if (!_campaignPackMatchesContext(
+        profile: profile,
+        pack: pack,
+        activation: activation,
+      )) {
+        return _resolveCampaign(
+          activation: activation,
+          fallbackReasonCode: 'nusuk_campaign_pack_context_mismatch',
+        );
+      }
+
+      return Manasikuna1448ResolvedContext(
+        profile: profile,
+        campaignPack: pack,
+        resolution: Manasikuna1448RuntimeResolution(
+          requestedMode: requestedMode,
+          effectiveMode: ManasikunaIntegrationMode.nusukConnected,
+          profileProviderId: provider.providerId,
+          campaignProviderId: provider.providerId,
+        ),
+      );
+    } catch (_) {
+      return _resolveCampaign(
+        activation: activation,
+        fallbackReasonCode: 'nusuk_provider_error',
+      );
+    }
+  }
+
+  bool _campaignPackMatchesContext({
+    required OfficialPilgrimSeed profile,
+    required CampaignOperationalPack pack,
+    required ActivationCredential activation,
+  }) {
+    final profileCampaign = profile.campaignReference?.trim();
+    if (profileCampaign != null &&
+        profileCampaign.isNotEmpty &&
+        pack.campaignReference.trim() != profileCampaign) {
+      return false;
+    }
+
+    final profileGroup = profile.groupReference?.trim();
+    final packGroup = pack.groupReference?.trim();
+    if (profileGroup != null &&
+        profileGroup.isNotEmpty &&
+        packGroup != null &&
+        packGroup.isNotEmpty &&
+        packGroup != profileGroup) {
+      return false;
+    }
+
+    final activationPackId = activation.packId?.trim();
+    if (activationPackId != null &&
+        activationPackId.isNotEmpty &&
+        pack.packId.trim() != activationPackId) {
+      return false;
+    }
+
+    return true;
+  }
+
+  String _fallbackTrail(String? priorReason, String currentReason) {
+    if (priorReason == null || priorReason.isEmpty) {
+      return currentReason;
+    }
+    return '$priorReason>$currentReason';
   }
 }

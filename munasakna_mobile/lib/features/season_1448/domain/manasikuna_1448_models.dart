@@ -143,12 +143,32 @@ class CampaignOperationalPack {
 }
 
 class ActivationCredential {
-  const ActivationCredential({
+  ActivationCredential({
     required this.opaqueToken,
     required this.issuedAt,
     required this.expiresAt,
     this.packId,
-  }) : assert(opaqueToken != '');
+  }) {
+    if (opaqueToken.trim().isEmpty) {
+      throw ArgumentError.value(
+        opaqueToken,
+        'opaqueToken',
+        'Activation token must not be blank.',
+      );
+    }
+    if (!expiresAt.isAfter(issuedAt)) {
+      throw ArgumentError(
+        'Activation expiry must be strictly after its issue time.',
+      );
+    }
+    if (packId != null && packId!.trim().isEmpty) {
+      throw ArgumentError.value(
+        packId,
+        'packId',
+        'Activation packId must not be blank when provided.',
+      );
+    }
+  }
 
   /// Opaque token only. Personal data must never be embedded in this value.
   final String opaqueToken;
