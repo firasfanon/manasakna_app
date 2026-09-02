@@ -23,7 +23,7 @@ class MunasaknaBottomNav extends StatelessWidget {
       'رحلتي',
       Icons.route_rounded,
       Icons.route_outlined,
-      MunasaknaRoutes.journey,
+      MunasaknaRoutes.season1448Launch,
     ),
     _NavDestination(
       'الرئيسية',

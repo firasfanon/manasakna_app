@@ -39,6 +39,7 @@ import '../../features/hajj_matrix/presentation/pages/layered_guide_page.dart';
 import '../../features/health/presentation/pages/health_page.dart';
 import '../../features/home/presentation/pages/munasakna_home_page.dart';
 import '../../features/journey/presentation/pages/journey_page.dart';
+import '../../features/season_1448/presentation/pages/manasikuna_1448_launch_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/miqat/presentation/pages/miqat_page.dart';
 import '../../features/location/presentation/pages/current_location_page.dart';
@@ -67,67 +68,194 @@ import 'munasakna_routes.dart';
 final GoRouter munasaknaRouter = GoRouter(
   initialLocation: MunasaknaRoutes.home,
   routes: [
-    GoRoute(path: MunasaknaRoutes.home, builder: (context, state) => const MunasaknaHomePage()),
-    GoRoute(path: MunasaknaRoutes.profile, builder: (context, state) => const ProfilePage()),
-    GoRoute(path: MunasaknaRoutes.updateProfile, builder: (context, state) => const UpdateProfilePage()),
-    GoRoute(path: MunasaknaRoutes.journey, builder: (context, state) => const JourneyPage()),
-    GoRoute(path: MunasaknaRoutes.rituals, builder: (context, state) => const RitualsPage()),
-    GoRoute(path: MunasaknaRoutes.checklist, builder: (context, state) => const ChecklistPage()),
-    GoRoute(path: MunasaknaRoutes.guidance, builder: (context, state) => const GuidancePage()),
-    GoRoute(path: MunasaknaRoutes.fatwa, builder: (context, state) => const FatwaPage()),
-    GoRoute(path: MunasaknaRoutes.complaints, builder: (context, state) => const ComplaintsPage()),
-    GoRoute(path: MunasaknaRoutes.survey, builder: (context, state) => const SurveyPage()),
-    GoRoute(path: MunasaknaRoutes.contacts, builder: (context, state) => const ContactsPage()),
-    GoRoute(path: MunasaknaRoutes.prayerTimes, builder: (context, state) => const PrayerTimesPage()),
-    GoRoute(path: MunasaknaRoutes.usefulLinks, builder: (context, state) => const UsefulLinksPage()),
-    GoRoute(path: MunasaknaRoutes.currentLocation, builder: (context, state) => const CurrentLocationPage()),
-    GoRoute(path: MunasaknaRoutes.health, builder: (context, state) => const HealthPage()),
-    GoRoute(path: MunasaknaRoutes.emergency, builder: (context, state) => const EmergencyPage()),
-    GoRoute(path: MunasaknaRoutes.digitalCard, builder: (context, state) => const DigitalCardPage()),
-    GoRoute(path: MunasaknaRoutes.services, builder: (context, state) => const ServicesPage()),
-    GoRoute(path: MunasaknaRoutes.settings, builder: (context, state) => const SettingsPage()),
-    GoRoute(path: MunasaknaRoutes.privacy, builder: (context, state) => const PrivacyPage()),
-    GoRoute(path: MunasaknaRoutes.notifications, builder: (context, state) => const NotificationsPage()),
-    GoRoute(path: MunasaknaRoutes.hajjMatrix, builder: (context, state) => const HajjMatrixPage()),
-    GoRoute(path: MunasaknaRoutes.layerGuide, builder: (context, state) => const LayeredGuidePage()),
-    GoRoute(path: MunasaknaRoutes.hajjFaq, builder: (context, state) => const ContextualFaqPage()),
-    GoRoute(path: MunasaknaRoutes.hajjAssistant, builder: (context, state) => const SimpleHajjAssistantPage()),
-    GoRoute(path: MunasaknaRoutes.hajjType, builder: (context, state) => const HajjTypePage()),
-    GoRoute(path: MunasaknaRoutes.miqat, builder: (context, state) => const MiqatPage()),
-    GoRoute(path: MunasaknaRoutes.dailyCompanion, builder: (context, state) => const DailyCompanionPage()),
-    GoRoute(path: MunasaknaRoutes.fieldGuide, builder: (context, state) => const FieldGuidePage()),
-    GoRoute(path: MunasaknaRoutes.offlineLibrary, builder: (context, state) => const OfflineLibraryPage()),
-    GoRoute(path: MunasaknaRoutes.hajjSchedule, builder: (context, state) => const HajjSchedulePage()),
-    GoRoute(path: MunasaknaRoutes.documentsWallet, builder: (context, state) => const DocumentsWalletPage()),
-    GoRoute(path: MunasaknaRoutes.groupSupervisor, builder: (context, state) => const GroupSupervisorPage()),
-    GoRoute(path: MunasaknaRoutes.accommodationTransport, builder: (context, state) => const AccommodationTransportPage()),
-    GoRoute(path: MunasaknaRoutes.accessibilitySupport, builder: (context, state) => const AccessibilitySupportPage()),
-    GoRoute(path: MunasaknaRoutes.postHajj, builder: (context, state) => const PostHajjPage()),
-    GoRoute(path: MunasaknaRoutes.appGuide, builder: (context, state) => const AppGuidePage()),
-    GoRoute(path: MunasaknaRoutes.phaseNavigator, builder: (context, state) => const PhaseNavigatorPage()),
-    GoRoute(path: MunasaknaRoutes.knowledgeGovernance, builder: (context, state) => const KnowledgeGovernancePage()),
-    GoRoute(path: MunasaknaRoutes.nusukReadiness, builder: (context, state) => const NusukReadinessPage()),
-    GoRoute(path: MunasaknaRoutes.travelBag, builder: (context, state) => const TravelBagPage()),
-    GoRoute(path: MunasaknaRoutes.betaReadiness, builder: (context, state) => const BetaReadinessPage()),
-    GoRoute(path: MunasaknaRoutes.betaReview, builder: (context, state) => const BetaReviewPage()),
-    GoRoute(path: MunasaknaRoutes.betaTestScenarios, builder: (context, state) => const BetaTestScenariosPage()),
-    GoRoute(path: MunasaknaRoutes.nusukContracts, builder: (context, state) => const NusukContractsPage()),
-    GoRoute(path: MunasaknaRoutes.betaPilot, builder: (context, state) => const BetaPilotPage()),
-    GoRoute(path: MunasaknaRoutes.betaFeedback, builder: (context, state) => const BetaFeedbackPage()),
-    GoRoute(path: MunasaknaRoutes.releaseGates, builder: (context, state) => const BetaReleaseGatesPage()),
-    GoRoute(path: MunasaknaRoutes.betaClosureChecklist, builder: (context, state) => const BetaClosureChecklistPage()),
-    GoRoute(path: MunasaknaRoutes.storeReadiness, builder: (context, state) => const StoreReadinessPage()),
-    GoRoute(path: MunasaknaRoutes.contentApprovalQueue, builder: (context, state) => const ContentApprovalQueuePage()),
-    GoRoute(path: MunasaknaRoutes.qualityRiskRegister, builder: (context, state) => const QualityRiskRegisterPage()),
-    GoRoute(path: MunasaknaRoutes.uiConsistencySweep, builder: (context, state) => const UiConsistencySweepPage()),
-    GoRoute(path: MunasaknaRoutes.assistantSafetyHardening, builder: (context, state) => const AssistantSafetyHardeningPage()),
-    GoRoute(path: MunasaknaRoutes.faqExpansionApproval, builder: (context, state) => const FaqExpansionApprovalPage()),
-    GoRoute(path: MunasaknaRoutes.nusukBridgeMock, builder: (context, state) => const NusukBridgeMockPage()),
-    GoRoute(path: MunasaknaRoutes.stageReminders, builder: (context, state) => const StageRemindersPage()),
-    GoRoute(path: MunasaknaRoutes.platformReadiness, builder: (context, state) => const PlatformReadinessPage()),
-    GoRoute(path: MunasaknaRoutes.finalBetaSmoke, builder: (context, state) => const FinalBetaSmokePage()),
-    GoRoute(path: MunasaknaRoutes.betaContentUxAudit, builder: (context, state) => const BetaContentUxAuditPage()),
-    GoRoute(path: MunasaknaRoutes.nusukIntegrationHandoff, builder: (context, state) => const NusukIntegrationHandoffPage()),
-    GoRoute(path: MunasaknaRoutes.nusukBridgePreview, builder: (context, state) => const NusukBridgePreviewPage()),
+    GoRoute(
+        path: MunasaknaRoutes.home,
+        builder: (context, state) => const MunasaknaHomePage()),
+    GoRoute(
+        path: MunasaknaRoutes.profile,
+        builder: (context, state) => const ProfilePage()),
+    GoRoute(
+        path: MunasaknaRoutes.updateProfile,
+        builder: (context, state) => const UpdateProfilePage()),
+    GoRoute(
+        path: MunasaknaRoutes.journey,
+        builder: (context, state) => const JourneyPage()),
+    GoRoute(
+        path: MunasaknaRoutes.season1448Launch,
+        builder: (context, state) => const Manasikuna1448LaunchPage()),
+    GoRoute(
+        path: MunasaknaRoutes.rituals,
+        builder: (context, state) => const RitualsPage()),
+    GoRoute(
+        path: MunasaknaRoutes.checklist,
+        builder: (context, state) => const ChecklistPage()),
+    GoRoute(
+        path: MunasaknaRoutes.guidance,
+        builder: (context, state) => const GuidancePage()),
+    GoRoute(
+        path: MunasaknaRoutes.fatwa,
+        builder: (context, state) => const FatwaPage()),
+    GoRoute(
+        path: MunasaknaRoutes.complaints,
+        builder: (context, state) => const ComplaintsPage()),
+    GoRoute(
+        path: MunasaknaRoutes.survey,
+        builder: (context, state) => const SurveyPage()),
+    GoRoute(
+        path: MunasaknaRoutes.contacts,
+        builder: (context, state) => const ContactsPage()),
+    GoRoute(
+        path: MunasaknaRoutes.prayerTimes,
+        builder: (context, state) => const PrayerTimesPage()),
+    GoRoute(
+        path: MunasaknaRoutes.usefulLinks,
+        builder: (context, state) => const UsefulLinksPage()),
+    GoRoute(
+        path: MunasaknaRoutes.currentLocation,
+        builder: (context, state) => const CurrentLocationPage()),
+    GoRoute(
+        path: MunasaknaRoutes.health,
+        builder: (context, state) => const HealthPage()),
+    GoRoute(
+        path: MunasaknaRoutes.emergency,
+        builder: (context, state) => const EmergencyPage()),
+    GoRoute(
+        path: MunasaknaRoutes.digitalCard,
+        builder: (context, state) => const DigitalCardPage()),
+    GoRoute(
+        path: MunasaknaRoutes.services,
+        builder: (context, state) => const ServicesPage()),
+    GoRoute(
+        path: MunasaknaRoutes.settings,
+        builder: (context, state) => const SettingsPage()),
+    GoRoute(
+        path: MunasaknaRoutes.privacy,
+        builder: (context, state) => const PrivacyPage()),
+    GoRoute(
+        path: MunasaknaRoutes.notifications,
+        builder: (context, state) => const NotificationsPage()),
+    GoRoute(
+        path: MunasaknaRoutes.hajjMatrix,
+        builder: (context, state) => const HajjMatrixPage()),
+    GoRoute(
+        path: MunasaknaRoutes.layerGuide,
+        builder: (context, state) => const LayeredGuidePage()),
+    GoRoute(
+        path: MunasaknaRoutes.hajjFaq,
+        builder: (context, state) => const ContextualFaqPage()),
+    GoRoute(
+        path: MunasaknaRoutes.hajjAssistant,
+        builder: (context, state) => const SimpleHajjAssistantPage()),
+    GoRoute(
+        path: MunasaknaRoutes.hajjType,
+        builder: (context, state) => const HajjTypePage()),
+    GoRoute(
+        path: MunasaknaRoutes.miqat,
+        builder: (context, state) => const MiqatPage()),
+    GoRoute(
+        path: MunasaknaRoutes.dailyCompanion,
+        builder: (context, state) => const DailyCompanionPage()),
+    GoRoute(
+        path: MunasaknaRoutes.fieldGuide,
+        builder: (context, state) => const FieldGuidePage()),
+    GoRoute(
+        path: MunasaknaRoutes.offlineLibrary,
+        builder: (context, state) => const OfflineLibraryPage()),
+    GoRoute(
+        path: MunasaknaRoutes.hajjSchedule,
+        builder: (context, state) => const HajjSchedulePage()),
+    GoRoute(
+        path: MunasaknaRoutes.documentsWallet,
+        builder: (context, state) => const DocumentsWalletPage()),
+    GoRoute(
+        path: MunasaknaRoutes.groupSupervisor,
+        builder: (context, state) => const GroupSupervisorPage()),
+    GoRoute(
+        path: MunasaknaRoutes.accommodationTransport,
+        builder: (context, state) => const AccommodationTransportPage()),
+    GoRoute(
+        path: MunasaknaRoutes.accessibilitySupport,
+        builder: (context, state) => const AccessibilitySupportPage()),
+    GoRoute(
+        path: MunasaknaRoutes.postHajj,
+        builder: (context, state) => const PostHajjPage()),
+    GoRoute(
+        path: MunasaknaRoutes.appGuide,
+        builder: (context, state) => const AppGuidePage()),
+    GoRoute(
+        path: MunasaknaRoutes.phaseNavigator,
+        builder: (context, state) => const PhaseNavigatorPage()),
+    GoRoute(
+        path: MunasaknaRoutes.knowledgeGovernance,
+        builder: (context, state) => const KnowledgeGovernancePage()),
+    GoRoute(
+        path: MunasaknaRoutes.nusukReadiness,
+        builder: (context, state) => const NusukReadinessPage()),
+    GoRoute(
+        path: MunasaknaRoutes.travelBag,
+        builder: (context, state) => const TravelBagPage()),
+    GoRoute(
+        path: MunasaknaRoutes.betaReadiness,
+        builder: (context, state) => const BetaReadinessPage()),
+    GoRoute(
+        path: MunasaknaRoutes.betaReview,
+        builder: (context, state) => const BetaReviewPage()),
+    GoRoute(
+        path: MunasaknaRoutes.betaTestScenarios,
+        builder: (context, state) => const BetaTestScenariosPage()),
+    GoRoute(
+        path: MunasaknaRoutes.nusukContracts,
+        builder: (context, state) => const NusukContractsPage()),
+    GoRoute(
+        path: MunasaknaRoutes.betaPilot,
+        builder: (context, state) => const BetaPilotPage()),
+    GoRoute(
+        path: MunasaknaRoutes.betaFeedback,
+        builder: (context, state) => const BetaFeedbackPage()),
+    GoRoute(
+        path: MunasaknaRoutes.releaseGates,
+        builder: (context, state) => const BetaReleaseGatesPage()),
+    GoRoute(
+        path: MunasaknaRoutes.betaClosureChecklist,
+        builder: (context, state) => const BetaClosureChecklistPage()),
+    GoRoute(
+        path: MunasaknaRoutes.storeReadiness,
+        builder: (context, state) => const StoreReadinessPage()),
+    GoRoute(
+        path: MunasaknaRoutes.contentApprovalQueue,
+        builder: (context, state) => const ContentApprovalQueuePage()),
+    GoRoute(
+        path: MunasaknaRoutes.qualityRiskRegister,
+        builder: (context, state) => const QualityRiskRegisterPage()),
+    GoRoute(
+        path: MunasaknaRoutes.uiConsistencySweep,
+        builder: (context, state) => const UiConsistencySweepPage()),
+    GoRoute(
+        path: MunasaknaRoutes.assistantSafetyHardening,
+        builder: (context, state) => const AssistantSafetyHardeningPage()),
+    GoRoute(
+        path: MunasaknaRoutes.faqExpansionApproval,
+        builder: (context, state) => const FaqExpansionApprovalPage()),
+    GoRoute(
+        path: MunasaknaRoutes.nusukBridgeMock,
+        builder: (context, state) => const NusukBridgeMockPage()),
+    GoRoute(
+        path: MunasaknaRoutes.stageReminders,
+        builder: (context, state) => const StageRemindersPage()),
+    GoRoute(
+        path: MunasaknaRoutes.platformReadiness,
+        builder: (context, state) => const PlatformReadinessPage()),
+    GoRoute(
+        path: MunasaknaRoutes.finalBetaSmoke,
+        builder: (context, state) => const FinalBetaSmokePage()),
+    GoRoute(
+        path: MunasaknaRoutes.betaContentUxAudit,
+        builder: (context, state) => const BetaContentUxAuditPage()),
+    GoRoute(
+        path: MunasaknaRoutes.nusukIntegrationHandoff,
+        builder: (context, state) => const NusukIntegrationHandoffPage()),
+    GoRoute(
+        path: MunasaknaRoutes.nusukBridgePreview,
+        builder: (context, state) => const NusukBridgePreviewPage()),
   ],
 );
