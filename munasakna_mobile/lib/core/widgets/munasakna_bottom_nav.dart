@@ -13,45 +13,94 @@ class MunasaknaBottomNav extends StatelessWidget {
   final int selectedIndex;
 
   static const List<_NavDestination> _destinations = [
-    _NavDestination('المناسك', Icons.explore_rounded, Icons.explore_outlined, MunasaknaRoutes.rituals),
-    _NavDestination('رحلتي', Icons.route_rounded, Icons.route_outlined, MunasaknaRoutes.journey),
-    _NavDestination('الرئيسية', Icons.home_rounded, Icons.home_outlined, MunasaknaRoutes.home),
-    _NavDestination('المساعد', Icons.record_voice_over_rounded, Icons.record_voice_over_outlined, MunasaknaRoutes.hajjAssistant),
-    _NavDestination('المزيد', Icons.more_horiz_rounded, Icons.more_horiz, MunasaknaRoutes.services),
+    _NavDestination(
+      'المناسك',
+      Icons.explore_rounded,
+      Icons.explore_outlined,
+      MunasaknaRoutes.rituals,
+    ),
+    _NavDestination(
+      'رحلتي',
+      Icons.route_rounded,
+      Icons.route_outlined,
+      MunasaknaRoutes.journey,
+    ),
+    _NavDestination(
+      'الرئيسية',
+      Icons.home_rounded,
+      Icons.home_outlined,
+      MunasaknaRoutes.home,
+    ),
+    _NavDestination(
+      'المساعد',
+      Icons.record_voice_over_rounded,
+      Icons.record_voice_over_outlined,
+      MunasaknaRoutes.hajjAssistant,
+    ),
+    _NavDestination(
+      'المزيد',
+      Icons.more_horiz_rounded,
+      Icons.more_horiz,
+      MunasaknaRoutes.services,
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final safeIndex = selectedIndex < 0 || selectedIndex >= _destinations.length ? 2 : selectedIndex;
+    final safeIndex = selectedIndex < 0 || selectedIndex >= _destinations.length
+        ? 2
+        : selectedIndex;
     final scheme = Theme.of(context).colorScheme;
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final isWide = viewportWidth >= 900;
+
     return SafeArea(
       top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(18, 0, 18, 10),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-        decoration: BoxDecoration(
-          color: scheme.surface.withValues(alpha: 0.96),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.32)),
-          boxShadow: [
-            BoxShadow(
-              color: scheme.shadow.withValues(alpha: 0.11),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isWide ? 760 : double.infinity,
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            for (var index = 0; index < _destinations.length; index++)
-              Expanded(
-                child: _BottomNavItem(
-                  destination: _destinations[index],
-                  selected: index == safeIndex,
-                  onTap: () => _goIfNeeded(context, _destinations[index].route),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: isWide ? 0 : 18),
+              child: Container(
+                key: const ValueKey<String>('munasakna-bottom-nav-surface'),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                decoration: BoxDecoration(
+                  color: scheme.surface.withValues(alpha: 0.96),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: scheme.outlineVariant.withValues(alpha: 0.32),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: scheme.shadow.withValues(alpha: 0.11),
+                      blurRadius: 22,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    for (var index = 0; index < _destinations.length; index++)
+                      Expanded(
+                        child: _BottomNavItem(
+                          destination: _destinations[index],
+                          selected: index == safeIndex,
+                          onTap: () => _goIfNeeded(
+                            context,
+                            _destinations[index].route,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );
@@ -111,7 +160,9 @@ class _BottomNavItem extends StatelessWidget {
               children: [
                 Icon(
                   selected ? destination.selectedIcon : destination.icon,
-                  color: selected ? Colors.white : scheme.onSurface.withValues(alpha: 0.72),
+                  color: selected
+                      ? Colors.white
+                      : scheme.onSurface.withValues(alpha: 0.72),
                   size: selected ? 25 : 22,
                 ),
                 const SizedBox(height: 3),
@@ -120,7 +171,9 @@ class _BottomNavItem extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: selected ? Colors.white : scheme.onSurface.withValues(alpha: 0.74),
+                    color: selected
+                        ? Colors.white
+                        : scheme.onSurface.withValues(alpha: 0.74),
                     fontSize: 10.5,
                     height: 1.05,
                     fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
