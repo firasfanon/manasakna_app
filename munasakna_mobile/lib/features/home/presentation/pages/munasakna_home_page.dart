@@ -38,7 +38,7 @@ class MunasaknaHomePage extends StatelessWidget {
               const _HeroKaabaPanel(),
               const SizedBox(height: 18),
               _JourneyShortcutCard(
-                  onTap: () => context.push(MunasaknaRoutes.journey)),
+                  onTap: () => context.push(MunasaknaRoutes.season1448Launch)),
               const SizedBox(height: 20),
               const _HomeSectionTitle(title: 'خدمات سريعة'),
               const SizedBox(height: 12),
@@ -256,7 +256,7 @@ class _JourneyShortcutCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'رحلتي',
+                        'رحلتي 1448',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
@@ -264,7 +264,7 @@ class _JourneyShortcutCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 7),
                       Text(
-                        'متابعة مراحل حجك بكل سهولة',
+                        'الحملة والجدول والتجمعات تعمل محليًا دون الاعتماد على نسك',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.white.withValues(alpha: 0.88),
                               fontWeight: FontWeight.w700,
@@ -275,7 +275,7 @@ class _JourneyShortcutCard extends StatelessWidget {
                         alignment: AlignmentDirectional.centerStart,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 10),
+                              horizontal: 8, vertical: 10),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.92),
                             borderRadius: BorderRadius.circular(999),
@@ -288,7 +288,7 @@ class _JourneyShortcutCard extends StatelessWidget {
                                   size: 19),
                               const SizedBox(width: 4),
                               Text(
-                                'عرض رحلتي',
+                                'فتح الرحلة',
                                 style: Theme.of(context)
                                     .textTheme
                                     .labelLarge

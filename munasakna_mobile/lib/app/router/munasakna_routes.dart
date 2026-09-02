@@ -3,6 +3,7 @@ class MunasaknaRoutes {
   static const String profile = '/profile';
   static const String updateProfile = '/update-profile';
   static const String journey = '/journey';
+  static const String season1448Launch = '/season-1448';
   static const String rituals = '/rituals';
   static const String checklist = '/checklist';
   static const String guidance = '/guidance';
