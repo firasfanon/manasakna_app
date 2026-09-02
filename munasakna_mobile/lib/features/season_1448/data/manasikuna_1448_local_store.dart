@@ -9,6 +9,8 @@ class Manasikuna1448LocalStore {
   const Manasikuna1448LocalStore();
 
   static const String snapshotKey = 'manasikuna_1448_launch_snapshot_v1';
+  static const int snapshotSchemaVersion = 1;
+  static const int supportedPackSchemaVersion = 1;
 
   Future<void> save(Manasikuna1448LaunchSession session) async {
     final preferences = await SharedPreferences.getInstance();
@@ -25,12 +27,21 @@ class Manasikuna1448LocalStore {
 
     try {
       final decoded = jsonDecode(raw);
-      if (decoded is! Map<String, dynamic>) {
-        return null;
+      if (decoded is! Map) {
+        return _rejectSnapshot(preferences);
       }
-      return _sessionFromJson(decoded);
+
+      final session = _sessionFromJson(
+        Map<String, dynamic>.from(decoded),
+      );
+
+      if (session == null || !_isSemanticallyValidForRestore(session)) {
+        return _rejectSnapshot(preferences);
+      }
+
+      return session;
     } catch (_) {
-      return null;
+      return _rejectSnapshot(preferences);
     }
   }
 
@@ -39,11 +50,64 @@ class Manasikuna1448LocalStore {
     await preferences.remove(snapshotKey);
   }
 
+  Future<Manasikuna1448LaunchSession?> _rejectSnapshot(
+    SharedPreferences preferences,
+  ) async {
+    await preferences.remove(snapshotKey);
+    return null;
+  }
+
+  bool _isSemanticallyValidForRestore(
+    Manasikuna1448LaunchSession session,
+  ) {
+    if (!session.profile.isActivationEligible) {
+      return false;
+    }
+
+    if (session.pack.schemaVersion != supportedPackSchemaVersion) {
+      return false;
+    }
+
+    final profileCampaign = _trimmedOrNull(
+      session.profile.campaignReference,
+    );
+    if (profileCampaign == null ||
+        session.pack.campaignReference.trim() != profileCampaign) {
+      return false;
+    }
+
+    final profileGroup = _trimmedOrNull(session.profile.groupReference);
+    final packGroup = _trimmedOrNull(session.pack.groupReference);
+    if (profileGroup != packGroup) {
+      return false;
+    }
+
+    if (!session.credentialExpiresAtUtc
+        .toUtc()
+        .isAfter(session.activatedAtUtc.toUtc())) {
+      return false;
+    }
+
+    if (session.savedAtUtc.toUtc().isBefore(session.activatedAtUtc.toUtc())) {
+      return false;
+    }
+
+    return true;
+  }
+
+  String? _trimmedOrNull(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+    return trimmed;
+  }
+
   Map<String, dynamic> _sessionToJson(
     Manasikuna1448LaunchSession session,
   ) {
     return <String, dynamic>{
-      'schemaVersion': 1,
+      'schemaVersion': snapshotSchemaVersion,
       'activatedAtUtc': session.activatedAtUtc.toUtc().toIso8601String(),
       'credentialExpiresAtUtc':
           session.credentialExpiresAtUtc.toUtc().toIso8601String(),
@@ -56,7 +120,7 @@ class Manasikuna1448LocalStore {
   Manasikuna1448LaunchSession? _sessionFromJson(
     Map<String, dynamic> json,
   ) {
-    if (json['schemaVersion'] != 1) {
+    if (json['schemaVersion'] != snapshotSchemaVersion) {
       return null;
     }
 
@@ -135,23 +199,27 @@ class Manasikuna1448LocalStore {
     final fullNameAr = json['fullNameAr'];
     final sourceAuthority = json['sourceAuthority'];
     final sourceRevision = json['sourceRevision'];
+    final campaignReference = json['campaignReference'];
+    final groupReference = json['groupReference'];
 
-    if (officialReference is! String ||
-        fullNameAr is! String ||
-        sourceAuthority is! String ||
-        sourceRevision is! String) {
+    if (!_isNonBlankString(officialReference) ||
+        !_isNonBlankString(fullNameAr) ||
+        !_isNonBlankString(sourceAuthority) ||
+        !_isNonBlankString(sourceRevision) ||
+        !_isNullableString(campaignReference) ||
+        !_isNullableString(groupReference)) {
       return null;
     }
 
     return OfficialPilgrimSeed(
-      officialReference: officialReference,
-      fullNameAr: fullNameAr,
+      officialReference: officialReference as String,
+      fullNameAr: fullNameAr as String,
       acceptanceStatus: acceptanceStatus,
-      sourceAuthority: sourceAuthority,
-      sourceRevision: sourceRevision,
+      sourceAuthority: sourceAuthority as String,
+      sourceRevision: sourceRevision as String,
       effectiveAt: effectiveAt,
-      campaignReference: json['campaignReference'] as String?,
-      groupReference: json['groupReference'] as String?,
+      campaignReference: campaignReference as String?,
+      groupReference: groupReference as String?,
     );
   }
 
@@ -186,72 +254,100 @@ class Manasikuna1448LocalStore {
     final campaignNameAr = json['campaignNameAr'];
     final updatedAt = _date(json['updatedAt']);
 
-    if (packId is! String ||
+    if (!_isNonBlankString(packId) ||
         schemaVersion is! int ||
-        campaignReference is! String ||
-        campaignNameAr is! String ||
+        schemaVersion != supportedPackSchemaVersion ||
+        !_isNonBlankString(campaignReference) ||
+        !_isNonBlankString(campaignNameAr) ||
         updatedAt == null) {
       return null;
     }
 
-    final meetingPoints = <CampaignMeetingPoint>[];
-    final meetingPointJson = json['meetingPoints'];
-    if (meetingPointJson is List) {
-      for (final item in meetingPointJson) {
-        if (item is Map) {
-          final parsed = _meetingPointFromJson(
-            Map<String, dynamic>.from(item),
-          );
-          if (parsed != null) {
-            meetingPoints.add(parsed);
-          }
-        }
+    const optionalStringKeys = <String>[
+      'groupReference',
+      'hotelNameAr',
+      'hotelAddressAr',
+      'transportLabelAr',
+      'minaCampAr',
+      'arafatCampAr',
+    ];
+    for (final key in optionalStringKeys) {
+      if (!_isNullableString(json[key])) {
+        return null;
       }
+    }
+
+    final meetingPointJson = json['meetingPoints'];
+    final scheduleJson = json['schedule'];
+    final emergencyJson = json['emergencyContacts'];
+
+    if (meetingPointJson is! List ||
+        scheduleJson is! List ||
+        emergencyJson is! List) {
+      return null;
+    }
+
+    final meetingPoints = <CampaignMeetingPoint>[];
+    for (final item in meetingPointJson) {
+      if (item is! Map) {
+        return null;
+      }
+      final parsed = _meetingPointFromJson(
+        Map<String, dynamic>.from(item),
+      );
+      if (parsed == null) {
+        return null;
+      }
+      meetingPoints.add(parsed);
     }
 
     final schedule = <CampaignScheduleItem>[];
-    final scheduleJson = json['schedule'];
-    if (scheduleJson is List) {
-      for (final item in scheduleJson) {
-        if (item is Map) {
-          final parsed = _scheduleItemFromJson(
-            Map<String, dynamic>.from(item),
-          );
-          if (parsed != null) {
-            schedule.add(parsed);
-          }
-        }
+    for (final item in scheduleJson) {
+      if (item is! Map) {
+        return null;
       }
+      final parsed = _scheduleItemFromJson(
+        Map<String, dynamic>.from(item),
+      );
+      if (parsed == null) {
+        return null;
+      }
+      schedule.add(parsed);
     }
 
     final emergencyContacts = <OperationalContact>[];
-    final emergencyJson = json['emergencyContacts'];
-    if (emergencyJson is List) {
-      for (final item in emergencyJson) {
-        if (item is Map) {
-          final parsed = _contactFromJson(
-            Map<String, dynamic>.from(item),
-          );
-          if (parsed != null) {
-            emergencyContacts.add(parsed);
-          }
-        }
+    for (final item in emergencyJson) {
+      if (item is! Map) {
+        return null;
       }
+      final parsed = _contactFromJson(
+        Map<String, dynamic>.from(item),
+      );
+      if (parsed == null) {
+        return null;
+      }
+      emergencyContacts.add(parsed);
     }
 
     OperationalContact? supervisor;
     final supervisorJson = json['supervisor'];
-    if (supervisorJson is Map) {
+    if (supervisorJson != null) {
+      if (supervisorJson is! Map) {
+        return null;
+      }
       supervisor = _contactFromJson(
         Map<String, dynamic>.from(supervisorJson),
       );
+      if (supervisor == null) {
+        return null;
+      }
     }
 
     return CampaignOperationalPack(
-      packId: packId,
-      schemaVersion: schemaVersion,
-      campaignReference: campaignReference,
-      campaignNameAr: campaignNameAr,
+      packId: packId as String,
+      schemaVersion: schemaVersion as int,
+      campaignReference: campaignReference as String,
+      campaignNameAr: campaignNameAr as String,
       updatedAt: updatedAt,
       groupReference: json['groupReference'] as String?,
       supervisor: supervisor,
@@ -280,15 +376,23 @@ class Manasikuna1448LocalStore {
     final id = json['id'];
     final labelAr = json['labelAr'];
     final descriptionAr = json['descriptionAr'];
-    if (id is! String || labelAr is! String || descriptionAr is! String) {
+    final latitude = json['latitude'];
+    final longitude = json['longitude'];
+
+    if (!_isNonBlankString(id) ||
+        !_isNonBlankString(labelAr) ||
+        !_isNonBlankString(descriptionAr) ||
+        !_isNullableNumber(latitude) ||
+        !_isNullableNumber(longitude)) {
       return null;
     }
+
     return CampaignMeetingPoint(
-      id: id,
-      labelAr: labelAr,
-      descriptionAr: descriptionAr,
-      latitude: _double(json['latitude']),
-      longitude: _double(json['longitude']),
+      id: id as String,
+      labelAr: labelAr as String,
+      descriptionAr: descriptionAr as String,
+      latitude: latitude == null ? null : (latitude as num).toDouble(),
+      longitude: longitude == null ? null : (longitude as num).toDouble(),
     );
   }
 
@@ -307,17 +411,33 @@ class Manasikuna1448LocalStore {
     final id = json['id'];
     final titleAr = json['titleAr'];
     final startsAt = _date(json['startsAt']);
-    if (id is! String || titleAr is! String || startsAt == null) {
+    final meetingPointId = json['meetingPointId'];
+    final notesAr = json['notesAr'];
+
+    if (!_isNonBlankString(id) ||
+        !_isNonBlankString(titleAr) ||
+        startsAt == null ||
+        !_isNullableString(meetingPointId) ||
+        !_isNullableString(notesAr)) {
       return null;
     }
 
+    DateTime? endsAt;
+    final rawEndsAt = json['endsAt'];
+    if (rawEndsAt != null) {
+      endsAt = _date(rawEndsAt);
+      if (endsAt == null || !endsAt.isAfter(startsAt)) {
+        return null;
+      }
+    }
+
     return CampaignScheduleItem(
-      id: id,
-      titleAr: titleAr,
+      id: id as String,
+      titleAr: titleAr as String,
       startsAt: startsAt,
-      endsAt: _date(json['endsAt']),
-      meetingPointId: json['meetingPointId'] as String?,
-      notesAr: json['notesAr'] as String?,
+      endsAt: endsAt,
+      meetingPointId: meetingPointId as String?,
+      notesAr: notesAr as String?,
     );
   }
 
@@ -333,14 +453,30 @@ class Manasikuna1448LocalStore {
     final roleAr = json['roleAr'];
     final nameAr = json['nameAr'];
     final phone = json['phone'];
-    if (roleAr is! String || nameAr is! String || phone is! String) {
+
+    if (!_isNonBlankString(roleAr) ||
+        !_isNonBlankString(nameAr) ||
+        !_isNonBlankString(phone)) {
       return null;
     }
+
     return OperationalContact(
-      roleAr: roleAr,
-      nameAr: nameAr,
-      phone: phone,
+      roleAr: roleAr as String,
+      nameAr: nameAr as String,
+      phone: phone as String,
     );
+  }
+
+  bool _isNonBlankString(Object? value) {
+    return value is String && value.trim().isNotEmpty;
+  }
+
+  bool _isNullableString(Object? value) {
+    return value == null || value is String;
+  }
+
+  bool _isNullableNumber(Object? value) {
+    return value == null || value is num;
   }
 
   DateTime? _date(Object? value) {
@@ -348,12 +484,5 @@ class Manasikuna1448LocalStore {
       return null;
     }
     return DateTime.tryParse(value)?.toUtc();
-  }
-
-  double? _double(Object? value) {
-    if (value is num) {
-      return value.toDouble();
-    }
-    return null;
   }
 }
