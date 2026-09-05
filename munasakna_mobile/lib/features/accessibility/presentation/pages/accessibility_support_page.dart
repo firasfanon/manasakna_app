@@ -106,7 +106,7 @@ class _SupportPlan {
 
 const _supportPlans = [
   _SupportPlan(title: 'كبير السن', priority: 'مهم', summary: 'تظهر له تعليمات مختصرة وأزرار أكبر وتنبيهات عدم الانفراد في الزحام.', steps: ['استخدم مرافقة المجموعة دائمًا.', 'جهّز بطاقة تعريف ورقم المشرف.', 'لا تذهب للجمرات أو الحرم منفردًا عند الزحام.'], icon: Icons.elderly_outlined, color: MunasaknaTheme.haramGreen),
-  _SupportPlan(title: 'مريض أو يتناول أدوية', priority: 'حساس', summary: 'يحفظ التطبيق ملاحظات صحية محلية إلى حين ربطها بنسك بإذن المستخدم.', steps: ['احمل الأدوية بكمية كافية.', 'أخبر المرافق أو المشرف بمعلومة صحية مهمة.', 'عند التعب الشديد توقف واطلب مساعدة.'], icon: Icons.medication_outlined, color: MunasaknaTheme.roseAlert),
+  _SupportPlan(title: 'مريض أو يتناول أدوية', priority: 'حساس', summary: 'لا تحفظ هذه النسخة ملاحظات صحية شخصية؛ عند الحاجة شارك المعلومة مباشرة مع الطبيب أو المشرف المختص.', steps: ['احمل الأدوية بكمية كافية.', 'أخبر المرافق أو المشرف بمعلومة صحية مهمة.', 'عند التعب الشديد توقف واطلب مساعدة.'], icon: Icons.medication_outlined, color: MunasaknaTheme.roseAlert),
   _SupportPlan(title: 'ذوو الإعاقة أو الحركة المحدودة', priority: 'ميداني', summary: 'يحتاج الحاج إلى مسارات ميسرة وتنسيق خاص مع الحملة والمشرف.', steps: ['حدد حاجتك قبل التفويج.', 'استخدم خدمة الطوارئ والموقع عند الانفصال.', 'لا تعتمد على تقدير شخصي في الزحام الشديد.'], icon: Icons.accessible_forward_outlined, color: MunasaknaTheme.zamzamBlue),
   _SupportPlan(title: 'من يخاف الزحام أو الضياع', priority: 'وقائي', summary: 'يركز التطبيق على نقاط التجمع، مشاركة الموقع، والاتصال بالمشرف عند الحاجة.', steps: ['احفظ نقطة اللقاء.', 'شارك موقعك عند الحاجة فقط.', 'ابق في مكان آمن ولا تتحرك عشوائيًا.'], icon: Icons.psychology_alt_outlined, color: MunasaknaTheme.kiswahGold),
 ];

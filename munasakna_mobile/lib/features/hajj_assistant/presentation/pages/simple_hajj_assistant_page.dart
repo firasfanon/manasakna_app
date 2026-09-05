@@ -196,7 +196,7 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
       isUser: false,
       kind: reminder.kind,
       isSensitive: reminder.isCritical,
-      text: '${reminder.title}\n\n${reminder.message}\n\nالمرحلة: ${reminder.phaseLabel}\nالإجراء: ${reminder.actionLabel}\n\n${reminder.requiresNusukData ? 'ملاحظة: سيتم تخصيص هذا التذكير لاحقًا من بيانات نسك.\n' : ''}${reminder.requiresLocation ? 'ملاحظة: يمكن ربطه لاحقًا بالموقع بعد موافقة المستخدم.\n' : ''}الصوت: ${_voiceGuidanceEnabled ? _voiceProfile.labelAr : 'متوقف حاليًا'}',
+      text: '${reminder.title}\n\n${reminder.message}\n\nالمرحلة: ${reminder.phaseLabel}\nالإجراء: ${reminder.actionLabel}\n\n${reminder.requiresNusukData ? 'ملاحظة: سيتم تخصيص هذا التذكير لاحقًا من بيانات رسمية مصرح بها عند توفر مزود معتمد.\n' : ''}${reminder.requiresLocation ? 'ملاحظة: يمكن ربطه لاحقًا بالموقع بعد موافقة المستخدم.\n' : ''}الصوت: ${_voiceGuidanceEnabled ? _voiceProfile.labelAr : 'متوقف حاليًا'}',
     );
     setState(() {
       _messages.add(_AssistantMessage(isUser: true, text: responseTitle, kind: AssistantResponseKind.question));
@@ -242,7 +242,7 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
           const SizedBox(height: 14),
           const ManasikunaSectionTitle(
             title: 'تذكيرات وتنبيهات ذكية',
-            subtitle: 'تجريبية محلية الآن، وتُخصص لاحقًا حسب بيانات نسك والموقع بإذن المستخدم',
+            subtitle: 'تجريبية محلية الآن، وتُخصص لاحقًا حسب بيانات رسمية مصرح بها والموقع بإذن المستخدم',
             icon: Icons.notifications_active_rounded,
           ),
           const SizedBox(height: 10),
@@ -285,6 +285,7 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
                 icon: Icon(_isListening ? Icons.stop_circle_rounded : Icons.mic_none_rounded),
               ),
               suffixIcon: IconButton(
+                tooltip: 'إرسال السؤال',
                 onPressed: _ask,
                 icon: const Icon(Icons.send_rounded),
               ),

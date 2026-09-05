@@ -68,7 +68,10 @@ class MunasaknaBottomNav extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: isWide ? 0 : 18),
               child: Container(
                 key: const ValueKey<String>('munasakna-bottom-nav-surface'),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: scheme.surface.withValues(alpha: 0.96),
                   borderRadius: BorderRadius.circular(30),
@@ -113,7 +116,7 @@ class MunasaknaBottomNav extends StatelessWidget {
   }
 }
 
-class _BottomNavItem extends StatelessWidget {
+class _BottomNavItem extends StatefulWidget {
   const _BottomNavItem({
     required this.destination,
     required this.selected,
@@ -125,27 +128,74 @@ class _BottomNavItem extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_BottomNavItem> createState() => _BottomNavItemState();
+}
+
+class _BottomNavItemState extends State<_BottomNavItem> {
+  late final FocusNode _focusNode;
+  bool _hasFocus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode(
+      debugLabel: 'bottom-nav-${widget.destination.label}',
+    );
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final selectedColor = MunasaknaTheme.deepHaramGreen;
+
     return Semantics(
       button: true,
-      selected: selected,
-      label: destination.label,
+      selected: widget.selected,
+      label: widget.destination.label,
+      hint: 'الانتقال إلى ${widget.destination.label}',
+      onTap: widget.onTap,
+      excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          key: ValueKey<String>('bottom-nav-${widget.destination.route}'),
+          focusNode: _focusNode,
+          onFocusChange: (focused) {
+            if (_hasFocus == focused) return;
+            setState(() => _hasFocus = focused);
+          },
+          focusColor: selectedColor.withValues(alpha: 0.12),
+          hoverColor: selectedColor.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(24),
-          onTap: onTap,
+          onTap: widget.onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
             constraints: const BoxConstraints(minHeight: 56),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 7,
+            ),
             decoration: BoxDecoration(
-              color: selected ? selectedColor : Colors.transparent,
-              borderRadius: BorderRadius.circular(selected ? 24 : 18),
-              boxShadow: selected
+              color: widget.selected ? selectedColor : Colors.transparent,
+              borderRadius: BorderRadius.circular(
+                widget.selected ? 24 : 18,
+              ),
+              border: Border.all(
+                color: _hasFocus
+                    ? (widget.selected
+                        ? MunasaknaTheme.kiswahGold
+                        : scheme.primary)
+                    : Colors.transparent,
+                width: _hasFocus ? 3 : 1,
+              ),
+              boxShadow: widget.selected
                   ? [
                       BoxShadow(
                         color: selectedColor.withValues(alpha: 0.26),
@@ -159,24 +209,27 @@ class _BottomNavItem extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  selected ? destination.selectedIcon : destination.icon,
-                  color: selected
+                  widget.selected
+                      ? widget.destination.selectedIcon
+                      : widget.destination.icon,
+                  color: widget.selected
                       ? Colors.white
                       : scheme.onSurface.withValues(alpha: 0.72),
-                  size: selected ? 25 : 22,
+                  size: widget.selected ? 25 : 22,
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  destination.label,
+                  widget.destination.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: selected
+                    color: widget.selected
                         ? Colors.white
                         : scheme.onSurface.withValues(alpha: 0.74),
                     fontSize: 10.5,
                     height: 1.05,
-                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                    fontWeight:
+                        widget.selected ? FontWeight.w900 : FontWeight.w700,
                   ),
                 ),
               ],
@@ -189,7 +242,12 @@ class _BottomNavItem extends StatelessWidget {
 }
 
 class _NavDestination {
-  const _NavDestination(this.label, this.selectedIcon, this.icon, this.route);
+  const _NavDestination(
+    this.label,
+    this.selectedIcon,
+    this.icon,
+    this.route,
+  );
 
   final String label;
   final IconData selectedIcon;
