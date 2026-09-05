@@ -1,3 +1,4 @@
+import '../domain/manasikuna_1448_contract_policy.dart';
 import '../domain/manasikuna_1448_models.dart';
 import '../domain/manasikuna_1448_provider_contracts.dart';
 
@@ -20,6 +21,8 @@ class Manasikuna1448SyntheticSource {
   static const String syntheticPackId = 'pack-synthetic-1448-001';
   static const String syntheticCampaignReference = 'campaign-synthetic-1448-01';
   static const String syntheticGroupReference = 'group-synthetic-1448-a';
+  static const String syntheticAuthority =
+      'official-hajj-system.synthetic-fixture';
 
   Manasikuna1448SyntheticActivationBundle? bundleForToken(
     String rawToken, {
@@ -73,16 +76,33 @@ class _SyntheticPilgrimProfileProvider implements PilgrimProfileProvider {
   Future<OfficialPilgrimSeed?> loadProfile({
     ActivationCredential? activation,
   }) async {
+    const sourceRevision = 'synthetic-1448-seed-r1';
+
     return OfficialPilgrimSeed(
       officialReference: 'APPROVED-SYNTH-1448-001',
       fullNameAr: 'حاج تجريبي 1448',
       acceptanceStatus: OfficialPilgrimAcceptanceStatus.approved,
-      sourceAuthority: 'authorized-source.synthetic-only',
-      sourceRevision: 'synthetic-1448-rev-1',
+      sourceAuthority: Manasikuna1448SyntheticSource.syntheticAuthority,
+      sourceRevision: sourceRevision,
       effectiveAt: clock,
       campaignReference:
           Manasikuna1448SyntheticSource.syntheticCampaignReference,
       groupReference: Manasikuna1448SyntheticSource.syntheticGroupReference,
+      contractMetadata: Manasikuna1448ContractMetadata(
+        contractVersion:
+            Manasikuna1448WaveCContractPolicy.pilgrimSeedContractVersion,
+        authorityModel: Manasikuna1448WaveCContractPolicy.authorityModel,
+        sourceAuthority: Manasikuna1448SyntheticSource.syntheticAuthority,
+        sourceRevision: sourceRevision,
+        provenanceReference:
+            'synthetic://manasakna/1448/official-pilgrim-seed/001',
+        dataClass: Manasikuna1448ContractDataClass.syntheticFixture,
+        approvalState:
+            Manasikuna1448ContractApprovalState.approvedForFixtureUse,
+        issuedAt: clock.subtract(const Duration(minutes: 5)),
+        expiresAt: clock.add(const Duration(days: 90)),
+        updateSequence: 1,
+      ),
     );
   }
 }
@@ -170,6 +190,26 @@ class _SyntheticCampaignOperationalProvider
           phone: '+0000000002',
         ),
       ],
+      contractMetadata: Manasikuna1448ContractMetadata(
+        contractVersion:
+            Manasikuna1448WaveCContractPolicy.campaignPackContractVersion,
+        authorityModel: Manasikuna1448WaveCContractPolicy.authorityModel,
+        sourceAuthority: Manasikuna1448SyntheticSource.syntheticAuthority,
+        sourceRevision: 'synthetic-1448-campaign-pack-r1',
+        provenanceReference:
+            'synthetic://manasakna/1448/campaign-operational-pack/001',
+        dataClass: Manasikuna1448ContractDataClass.syntheticFixture,
+        approvalState:
+            Manasikuna1448ContractApprovalState.approvedForFixtureUse,
+        issuedAt: clock.subtract(const Duration(minutes: 5)),
+        expiresAt: clock.add(const Duration(days: 90)),
+        updateSequence: 1,
+        integrityAlgorithm: 'SHA-256',
+        integrityDigest:
+            '6f28db4c35105b2d57679e3ce0545526247dc52836da47fda795466484616164',
+        signatureReference:
+            'synthetic://manasakna/1448/signature/campaign-pack-001',
+      ),
     );
   }
 }
