@@ -1,15 +1,26 @@
-# manasikuna Store Readiness
+# Manasikuna Store Readiness
 
 ## Scope
 
-manasikuna is prepared in this package as an independent local-first mobile app:
+This package remains an independent local-first Hajj and Umrah companion:
 
 - No login.
-- No external database.
-- No Supabase/Firebase/Auth/Ads/Analytics dependency.
-- Optional location permission only when the user taps "موقعي الحالي".
-- Local references are generated on-device for complaints, surveys, and profile update requests.
-- Settings are saved locally using SharedPreferences.
+- No external pilgrim database.
+- No real pilgrim data.
+- No Supabase/Firebase/Auth/Ads/Analytics dependency in the current app runtime.
+- Optional location permission when the user opens “موقعي الحالي”.
+- Optional microphone permission when the user explicitly uses voice input.
+- Settings and the synthetic 1448 journey snapshot are stored locally.
+- The raw activation token is not persisted in the journey snapshot.
+- Nusuk is an optional future provider, not a current launch dependency.
+
+## Voice-service disclosure
+
+Speech recognition may be provided by the operating system or browser. Depending on platform configuration, the platform provider may process speech input under its own policies. Manasikuna does not operate a speech-audio ingestion backend in this release.
+
+Text-to-speech uses the voice service available on the operating system or browser.
+
+Store privacy/Data Safety answers must therefore be revalidated for each target platform and cannot be copied mechanically from an earlier “no data” answer.
 
 ## Android
 
@@ -19,24 +30,14 @@ Package ID:
 ps.manasikuna.app
 ```
 
-Release settings:
+Current baseline manifest requests:
 
-- compileSdk: 35
-- targetSdk: 35
-- minSdk: 23
-- release shrink/minify enabled
-- release signing via `android/key.properties`
+- `RECORD_AUDIO`
+- `ACCESS_FINE_LOCATION`
+- `ACCESS_COARSE_LOCATION`
+- `usesCleartextTraffic=false`
 
-Before publishing:
-
-```bash
-flutter clean
-flutter pub get
-flutter analyze
-flutter test
-./tools/create_android_upload_keystore.sh
-flutter build appbundle --release
-```
+Wave A proved that a debug APK can be produced in an isolated snapshot, but Android reproducible release/toolchain closure remains a later release/operability gate. Debug-build success is not store approval.
 
 ## iOS
 
@@ -46,34 +47,29 @@ Bundle ID:
 ps.manasikuna.app
 ```
 
-Included:
+The current `PrivacyInfo.xcprivacy` declares no app tracking and no app-collected data types. This declaration remains valid only while the current standalone/local data boundary remains true and must be revalidated before any real-data or third-party service integration.
 
-- `ios/Runner/Info.plist` with location usage text.
-- `ios/Runner/PrivacyInfo.xcprivacy` declaring no tracking and no collected data.
-- iOS project Bundle ID updated to `ps.manasikuna.app`.
+iOS runtime/store acceptance still requires macOS/Xcode/device evidence.
 
-Before publishing:
+## Web
 
-```bash
-flutter clean
-flutter pub get
-cd ios && pod install && cd ..
-flutter build ipa --release
-```
+The Web build is supported as the standalone Flutter Web application. Flutter owns viewport configuration; the app shell must not override Flutter’s generated viewport policy in a way that blocks zoom/accessibility.
 
-Use current Xcode / iOS SDK required by App Store at the time of upload.
+## Privacy console review checklist
 
-## Privacy console answers
+Before any store submission, verify the actual target-platform behavior for:
 
-Suggested classification, if no extra SDKs are added:
-
-- Data collected: No.
-- Data shared: No.
-- Tracking: No.
-- Account creation: No.
-- Account deletion: Not applicable.
-- Permissions: Location when in use, optional, used locally.
+- App-operated data collection.
+- Data sharing.
+- Tracking.
+- Account creation/deletion.
+- Optional location permission.
+- Optional microphone permission.
+- OS/browser speech-recognition processing.
+- Any SDK added after this baseline.
 
 ## Deferred integrations
 
-Any future backend bridge, payment flow, document upload, or official verification must be introduced as a separate reviewed batch with privacy and store disclosure updates.
+Any future backend bridge, official pilgrim data, payment flow, document upload, real Campaign Pack ingestion, or official verification requires a separate authorization and privacy/security/store-disclosure review.
+
+`PRODUCTION=NO` and `STORE_RELEASE=NO` remain in force until a separate release decision.
