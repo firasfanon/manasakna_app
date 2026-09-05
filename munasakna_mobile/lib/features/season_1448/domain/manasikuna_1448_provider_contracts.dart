@@ -1,5 +1,9 @@
 import 'manasikuna_1448_models.dart';
 
+/// Provider seam for an OFFICIAL_PILGRIM_SEED.
+///
+/// Legacy providers may still return a seed without contract metadata. When the
+/// Wave C policy is enabled, connected runtime rejects such a result fail-closed.
 abstract interface class PilgrimProfileProvider {
   String get providerId;
 
@@ -8,6 +12,10 @@ abstract interface class PilgrimProfileProvider {
   });
 }
 
+/// Provider seam for a CAMPAIGN_OPERATIONAL_PACK.
+///
+/// Wave C does not connect a real endpoint. The current implementation uses
+/// synthetic fixtures carrying version/provenance/approval/integrity metadata.
 abstract interface class CampaignOperationalProvider {
   String get providerId;
 
@@ -32,6 +40,7 @@ abstract interface class OfficialServiceHandoffProvider {
 /// Compatibility seam for a future officially authorized Nusuk integration.
 ///
 /// No implementation is enabled by default in the 1448 standalone launch.
+/// REAL_NUSUK remains NO until a separate explicit authorization.
 abstract interface class NusukCompatibilityProvider
     implements PilgrimProfileProvider, CampaignOperationalProvider {
   bool get isOfficiallyAvailable;

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/manasikuna_1448_contract_policy.dart';
 import '../domain/manasikuna_1448_launch_models.dart';
 import '../domain/manasikuna_1448_models.dart';
 
@@ -9,7 +10,7 @@ class Manasikuna1448LocalStore {
   const Manasikuna1448LocalStore();
 
   static const String snapshotKey = 'manasikuna_1448_launch_snapshot_v1';
-  static const int snapshotSchemaVersion = 1;
+  static const int snapshotSchemaVersion = 2;
   static const int supportedPackSchemaVersion = 1;
 
   Future<void> save(Manasikuna1448LaunchSession session) async {
@@ -61,6 +62,24 @@ class Manasikuna1448LocalStore {
     Manasikuna1448LaunchSession session,
   ) {
     if (!session.profile.isActivationEligible) {
+      return false;
+    }
+
+    const waveCPolicy =
+        Manasikuna1448WaveCContractPolicy.syntheticFixturesOnly();
+    if (waveCPolicy.profileViolation(
+          session.profile,
+          session.savedAtUtc,
+        ) !=
+        null) {
+      return false;
+    }
+    if (waveCPolicy.campaignPackViolation(
+          profile: session.profile,
+          pack: session.pack,
+          moment: session.savedAtUtc,
+        ) !=
+        null) {
       return false;
     }
 
@@ -170,6 +189,9 @@ class Manasikuna1448LocalStore {
       'effectiveAt': profile.effectiveAt.toUtc().toIso8601String(),
       'campaignReference': profile.campaignReference,
       'groupReference': profile.groupReference,
+      'contractMetadata': profile.contractMetadata == null
+          ? null
+          : _contractMetadataToJson(profile.contractMetadata!),
     };
   }
 
@@ -201,6 +223,16 @@ class Manasikuna1448LocalStore {
     final sourceRevision = json['sourceRevision'];
     final campaignReference = json['campaignReference'];
     final groupReference = json['groupReference'];
+    final contractMetadataJson = json['contractMetadata'];
+    if (contractMetadataJson is! Map) {
+      return null;
+    }
+    final contractMetadata = _contractMetadataFromJson(
+      Map<String, dynamic>.from(contractMetadataJson),
+    );
+    if (contractMetadata == null) {
+      return null;
+    }
 
     if (!_isNonBlankString(officialReference) ||
         !_isNonBlankString(fullNameAr) ||
@@ -220,6 +252,7 @@ class Manasikuna1448LocalStore {
       effectiveAt: effectiveAt,
       campaignReference: campaignReference as String?,
       groupReference: groupReference as String?,
+      contractMetadata: contractMetadata,
     );
   }
 
@@ -244,6 +277,9 @@ class Manasikuna1448LocalStore {
           pack.schedule.map(_scheduleItemToJson).toList(growable: false),
       'emergencyContacts':
           pack.emergencyContacts.map(_contactToJson).toList(growable: false),
+      'contractMetadata': pack.contractMetadata == null
+          ? null
+          : _contractMetadataToJson(pack.contractMetadata!),
     };
   }
 
@@ -253,6 +289,16 @@ class Manasikuna1448LocalStore {
     final campaignReference = json['campaignReference'];
     final campaignNameAr = json['campaignNameAr'];
     final updatedAt = _date(json['updatedAt']);
+    final contractMetadataJson = json['contractMetadata'];
+    if (contractMetadataJson is! Map) {
+      return null;
+    }
+    final contractMetadata = _contractMetadataFromJson(
+      Map<String, dynamic>.from(contractMetadataJson),
+    );
+    if (contractMetadata == null) {
+      return null;
+    }
 
     if (!_isNonBlankString(packId) ||
         schemaVersion is! int ||
@@ -359,6 +405,110 @@ class Manasikuna1448LocalStore {
       meetingPoints: meetingPoints,
       schedule: schedule,
       emergencyContacts: emergencyContacts,
+      contractMetadata: contractMetadata,
+    );
+  }
+
+  Map<String, dynamic> _contractMetadataToJson(
+    Manasikuna1448ContractMetadata metadata,
+  ) {
+    return <String, dynamic>{
+      'contractVersion': metadata.contractVersion,
+      'authorityModel': metadata.authorityModel,
+      'sourceAuthority': metadata.sourceAuthority,
+      'sourceRevision': metadata.sourceRevision,
+      'provenanceReference': metadata.provenanceReference,
+      'dataClass': metadata.dataClass.name,
+      'approvalState': metadata.approvalState.name,
+      'issuedAt': metadata.issuedAt.toUtc().toIso8601String(),
+      'expiresAt': metadata.expiresAt?.toUtc().toIso8601String(),
+      'revoked': metadata.revoked,
+      'updateSequence': metadata.updateSequence,
+      'integrityAlgorithm': metadata.integrityAlgorithm,
+      'integrityDigest': metadata.integrityDigest,
+      'signatureReference': metadata.signatureReference,
+    };
+  }
+
+  Manasikuna1448ContractMetadata? _contractMetadataFromJson(
+    Map<String, dynamic> json,
+  ) {
+    final contractVersion = json['contractVersion'];
+    final authorityModel = json['authorityModel'];
+    final sourceAuthority = json['sourceAuthority'];
+    final sourceRevision = json['sourceRevision'];
+    final provenanceReference = json['provenanceReference'];
+    final dataClassName = json['dataClass'];
+    final approvalStateName = json['approvalState'];
+    final issuedAt = _date(json['issuedAt']);
+    final expiresAtRaw = json['expiresAt'];
+    final revoked = json['revoked'];
+    final updateSequence = json['updateSequence'];
+    final integrityAlgorithm = json['integrityAlgorithm'];
+    final integrityDigest = json['integrityDigest'];
+    final signatureReference = json['signatureReference'];
+
+    if (!_isNonBlankString(contractVersion) ||
+        !_isNonBlankString(authorityModel) ||
+        !_isNonBlankString(sourceAuthority) ||
+        !_isNonBlankString(sourceRevision) ||
+        !_isNonBlankString(provenanceReference) ||
+        dataClassName is! String ||
+        approvalStateName is! String ||
+        issuedAt == null ||
+        revoked is! bool ||
+        updateSequence is! int ||
+        !_isNullableString(integrityAlgorithm) ||
+        !_isNullableString(integrityDigest) ||
+        !_isNullableString(signatureReference)) {
+      return null;
+    }
+
+    DateTime? expiresAt;
+    if (expiresAtRaw != null) {
+      expiresAt = _date(expiresAtRaw);
+      if (expiresAt == null || !expiresAt.isAfter(issuedAt)) {
+        return null;
+      }
+    }
+
+    Manasikuna1448ContractDataClass? dataClass;
+    for (final candidate in Manasikuna1448ContractDataClass.values) {
+      if (candidate.name == dataClassName) {
+        dataClass = candidate;
+        break;
+      }
+    }
+    if (dataClass == null) {
+      return null;
+    }
+
+    Manasikuna1448ContractApprovalState? approvalState;
+    for (final candidate in Manasikuna1448ContractApprovalState.values) {
+      if (candidate.name == approvalStateName) {
+        approvalState = candidate;
+        break;
+      }
+    }
+    if (approvalState == null) {
+      return null;
+    }
+
+    return Manasikuna1448ContractMetadata(
+      contractVersion: contractVersion as String,
+      authorityModel: authorityModel as String,
+      sourceAuthority: sourceAuthority as String,
+      sourceRevision: sourceRevision as String,
+      provenanceReference: provenanceReference as String,
+      dataClass: dataClass,
+      approvalState: approvalState,
+      issuedAt: issuedAt,
+      expiresAt: expiresAt,
+      revoked: revoked,
+      updateSequence: updateSequence,
+      integrityAlgorithm: integrityAlgorithm as String?,
+      integrityDigest: integrityDigest as String?,
+      signatureReference: signatureReference as String?,
     );
   }
 
