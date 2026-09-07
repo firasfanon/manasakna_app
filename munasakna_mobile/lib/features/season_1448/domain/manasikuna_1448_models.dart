@@ -34,6 +34,71 @@ extension OfficialPilgrimAcceptanceStatusX on OfficialPilgrimAcceptanceStatus {
       this == OfficialPilgrimAcceptanceStatus.approved;
 }
 
+enum Manasikuna1448ContractDataClass {
+  legacyUnverified,
+  syntheticFixture,
+  approvedNonPersonalFixture,
+  realPersonalData,
+}
+
+enum Manasikuna1448ContractApprovalState {
+  unverified,
+  approvedForFixtureUse,
+  approvedForRealUse,
+  revoked,
+}
+
+class Manasikuna1448ContractMetadata {
+  const Manasikuna1448ContractMetadata({
+    required this.contractVersion,
+    required this.authorityModel,
+    required this.sourceAuthority,
+    required this.sourceRevision,
+    required this.provenanceReference,
+    required this.dataClass,
+    required this.approvalState,
+    required this.issuedAt,
+    this.expiresAt,
+    this.revoked = false,
+    this.updateSequence = 1,
+    this.integrityAlgorithm,
+    this.integrityDigest,
+    this.signatureReference,
+  });
+
+  final String contractVersion;
+
+  /// Governing authority model, not an assertion that a fixture is real data.
+  final String authorityModel;
+  final String sourceAuthority;
+  final String sourceRevision;
+  final String provenanceReference;
+  final Manasikuna1448ContractDataClass dataClass;
+  final Manasikuna1448ContractApprovalState approvalState;
+  final DateTime issuedAt;
+  final DateTime? expiresAt;
+  final bool revoked;
+  final int updateSequence;
+
+  /// Evidence references supplied by the producing adapter.
+  ///
+  /// Wave C validates presence/shape for synthetic fixtures. Cryptographic
+  /// verification of a future real transport remains a separate endpoint gate.
+  final String? integrityAlgorithm;
+  final String? integrityDigest;
+  final String? signatureReference;
+
+  bool isTemporallyValidAt(DateTime moment) {
+    final utc = moment.toUtc();
+    if (utc.isBefore(issuedAt.toUtc())) {
+      return false;
+    }
+
+    final expiry = expiresAt;
+    return expiry == null || utc.isBefore(expiry.toUtc());
+  }
+}
+
 class OfficialPilgrimSeed {
   const OfficialPilgrimSeed({
     required this.officialReference,
@@ -44,6 +109,7 @@ class OfficialPilgrimSeed {
     required this.effectiveAt,
     this.campaignReference,
     this.groupReference,
+    this.contractMetadata,
   });
 
   /// An application or authority-issued reference. It must not be assumed to be
@@ -56,6 +122,10 @@ class OfficialPilgrimSeed {
   final DateTime effectiveAt;
   final String? campaignReference;
   final String? groupReference;
+
+  /// Null means legacy/unverified contract state. Wave C governed runtime
+  /// rejects null metadata for any connected campaign path.
+  final Manasikuna1448ContractMetadata? contractMetadata;
 
   bool get isActivationEligible => acceptanceStatus.canActivateManasikuna;
 }
@@ -123,6 +193,7 @@ class CampaignOperationalPack {
     this.meetingPoints = const <CampaignMeetingPoint>[],
     this.schedule = const <CampaignScheduleItem>[],
     this.emergencyContacts = const <OperationalContact>[],
+    this.contractMetadata,
   });
 
   final String packId;
@@ -140,6 +211,10 @@ class CampaignOperationalPack {
   final List<CampaignMeetingPoint> meetingPoints;
   final List<CampaignScheduleItem> schedule;
   final List<OperationalContact> emergencyContacts;
+
+  /// Null means legacy/unverified contract state. Wave C governed runtime
+  /// rejects null metadata for any connected campaign path.
+  final Manasikuna1448ContractMetadata? contractMetadata;
 }
 
 class ActivationCredential {

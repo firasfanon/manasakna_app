@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/manasikuna_1448_local_store.dart';
 import '../data/manasikuna_1448_synthetic_source.dart';
+import '../domain/manasikuna_1448_contract_policy.dart';
 import '../domain/manasikuna_1448_launch_models.dart';
 import '../domain/manasikuna_1448_models.dart';
 import '../domain/manasikuna_1448_runtime.dart';
@@ -23,6 +24,9 @@ final manasikuna1448LaunchControllerProvider = AsyncNotifierProvider<
 
 class Manasikuna1448LaunchController
     extends AsyncNotifier<Manasikuna1448LaunchState> {
+  static const _waveCPolicy =
+      Manasikuna1448WaveCContractPolicy.syntheticFixturesOnly();
+
   @override
   Future<Manasikuna1448LaunchState> build() async {
     final store = ref.read(manasikuna1448LocalStoreProvider);
@@ -37,6 +41,22 @@ class Manasikuna1448LaunchController
       await store.clear();
       return Manasikuna1448LaunchState.inactive(
         statusMessageCode: 'offline_activation_expired',
+      );
+    }
+
+    final profileViolation = _waveCPolicy.profileViolation(
+      session.profile,
+      now,
+    );
+    final packViolation = _waveCPolicy.campaignPackViolation(
+      profile: session.profile,
+      pack: session.pack,
+      moment: now,
+    );
+    if (profileViolation != null || packViolation != null) {
+      await store.clear();
+      return Manasikuna1448LaunchState.inactive(
+        statusMessageCode: 'offline_contract_invalid',
       );
     }
 
@@ -69,6 +89,7 @@ class Manasikuna1448LaunchController
         campaignProfileProvider: bundle.profileProvider,
         campaignOperationalProvider: bundle.operationalProvider,
         requestedMode: ManasikunaIntegrationMode.campaignConnected,
+        waveCContractPolicy: _waveCPolicy,
       );
 
       final resolved = await runtime.resolve(
