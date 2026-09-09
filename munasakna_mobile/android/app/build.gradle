@@ -6,13 +6,14 @@ plugins {
 
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("key.properties")
+def allowLocalValidationSigning = System.getenv("MANASAKNA_ALLOW_LOCAL_VALIDATION_SIGNING") == "1"
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
 android {
     namespace = "ps.manasikuna.app"
-    compileSdk = 35
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -26,7 +27,7 @@ android {
 
     defaultConfig {
         applicationId = "ps.manasikuna.app"
-        minSdk = 23
+        minSdkVersion = flutter.minSdkVersion
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -45,7 +46,12 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.release
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.release
+            } else if (allowLocalValidationSigning) {
+                // Validation-only fallback. This is never store-ready signing.
+                signingConfig = signingConfigs.debug
+            }
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

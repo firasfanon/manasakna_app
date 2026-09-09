@@ -1,0 +1,141 @@
+name: Manasakna Wave D CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.44.1"
+  ANALYZER_ISSUE_CEILING: "98"
+  GRADLE_WRAPPER_JAR_SHA256: "2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046"
+  GRADLE_DISTRIBUTION_SHA256: "2ab88d6de2c23e6adae7363ae6e29cbdd2a709e992929b48b6530fd0c7133bd6"
+  MANASAKNA_ALLOW_LOCAL_VALIDATION_SIGNING: "1"
+
+jobs:
+  linux-validation:
+    name: Analyze, test, web and Android release
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: munasakna_mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flutter 3.44.1 from official repository
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Toolchain identity
+        run: flutter --version
+
+      - name: Set up Gradle and validate wrapper
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Dependency resolution
+        run: flutter pub get
+
+      - name: Lockfile determinism
+        run: git diff --exit-code -- pubspec.lock
+
+      - name: Wrapper integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(sha256sum android/gradle/wrapper/gradle-wrapper.jar | awk '{print $1}')"
+          test "$actual" = "$GRADLE_WRAPPER_JAR_SHA256"
+          grep -F "distributionSha256Sum=$GRADLE_DISTRIBUTION_SHA256" android/gradle/wrapper/gradle-wrapper.properties
+          chmod +x android/gradlew
+          android/gradlew --version
+
+      - name: Full Flutter tests
+        run: flutter test
+
+      - name: Analyzer budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee "$RUNNER_TEMP/flutter-analyze.txt"
+          analyze_exit="${PIPESTATUS[0]}"
+          set -e
+          test "$analyze_exit" -eq 0
+
+          if grep -Eq '[0-9]+ issues? found' "$RUNNER_TEMP/flutter-analyze.txt"; then
+            issues="$(grep -Eo '[0-9]+ issues? found' "$RUNNER_TEMP/flutter-analyze.txt" | tail -1 | awk '{print $1}')"
+          elif grep -Fq 'No issues found' "$RUNNER_TEMP/flutter-analyze.txt"; then
+            issues=0
+          else
+            echo "Unable to resolve analyzer issue count."
+            exit 1
+          fi
+
+          echo "ANALYZER_ISSUE_COUNT=$issues"
+          test "$issues" -le "$ANALYZER_ISSUE_CEILING"
+
+      - name: Web JS release
+        run: flutter build web --release
+
+      - name: Android APK release
+        run: flutter build apk --release
+
+      - name: Android App Bundle release
+        run: flutter build appbundle --release
+
+      - name: Artifact provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "SOURCE_SHA=${GITHUB_SHA}"
+            echo "FLUTTER_VERSION=${FLUTTER_VERSION}"
+            echo "ANDROID_SIGNING_MODE=DEBUG_VALIDATION_ONLY_IF_RELEASE_KEY_ABSENT"
+            sha256sum build/app/outputs/flutter-apk/app-release.apk
+            sha256sum build/app/outputs/bundle/release/app-release.aab
+          } | tee build/wave-d-artifact-provenance.txt
+
+      - name: Upload validation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: manasakna-wave-d-validation-${{ github.sha }}
+          path: |
+            munasakna_mobile/build/app/outputs/flutter-apk/app-release.apk
+            munasakna_mobile/build/app/outputs/bundle/release/app-release.aab
+            munasakna_mobile/build/wave-d-artifact-provenance.txt
+          retention-days: 14
+          if-no-files-found: error
+
+  ios-no-codesign:
+    name: iOS release compile, no codesign
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: munasakna_mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flutter 3.44.1 from official repository
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Toolchain identity
+        run: flutter --version
+
+      - name: Dependency resolution
+        run: flutter pub get
+
+      - name: Lockfile determinism
+        run: git diff --exit-code -- pubspec.lock
+
+      - name: iOS release compile without signing
+        run: flutter build ios --release --no-codesign
