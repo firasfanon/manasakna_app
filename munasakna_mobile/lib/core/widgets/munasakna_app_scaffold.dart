@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/munasakna_theme.dart';
-import 'development_mode_banner.dart';
 import 'manasikuna_visual_identity.dart';
 import 'munasakna_bottom_nav.dart';
 
@@ -64,10 +63,7 @@ class MunasaknaAppScaffold extends StatelessWidget {
         actions: actions,
         iconTheme: const IconThemeData(color: Colors.white),
         leading: showBack && context.canPop()
-            ? IconButton(
-                onPressed: context.pop,
-                icon: const Icon(Icons.arrow_back_ios_new_rounded),
-              )
+            ? BackButton(onPressed: context.pop, color: Colors.white)
             : null,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -92,8 +88,6 @@ class MunasaknaAppScaffold extends StatelessWidget {
                   title: title,
                   icon: headerIcon ?? Icons.explore_rounded,
                 ),
-                const SizedBox(height: 12),
-                const DevelopmentModeBanner(compact: true),
                 const SizedBox(height: 14),
               ],
               child,

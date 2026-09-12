@@ -103,18 +103,12 @@ void main() {
     final navSize = tester.getSize(navFinder);
     expect(navSize.width, closeTo(760, 1.0));
 
-    await tester.scrollUntilVisible(
-      find.text('وضع التطوير: بلا تسجيل دخول'),
-      350,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-
     final navTop = tester.getTopLeft(navFinder).dy;
-    final developmentTextBottom =
-        tester.getBottomLeft(find.text('وضع التطوير: بلا تسجيل دخول')).dy;
+    final bodyScrollable = find.byType(Scrollable).first;
+    final bodyBottom = tester.getBottomLeft(bodyScrollable).dy;
 
-    expect(developmentTextBottom, lessThan(navTop));
+    expect(find.text('وضع التطوير: بلا تسجيل دخول'), findsNothing);
+    expect(bodyBottom, lessThanOrEqualTo(navTop + 1));
     expect(tester.takeException(), isNull);
   });
 }
