@@ -17,11 +17,14 @@ class ContactsPage extends StatelessWidget {
         children: [
           const InfoSectionCard(
             title: 'دليل تواصل محلي',
-            subtitle: 'أرقام تجريبية/تصنيفية إلى حين الربط ببيانات نسك والشركة والمجموعة.',
+            subtitle:
+                'جهات اتصال مهمة، وتظهر بيانات المشرف والحملة عند توفرها من مصدر رسمي.',
             icon: Icons.contact_phone_outlined,
-            trailing: MunasaknaStatusChip(label: 'قابل للربط', icon: Icons.link_outlined),
+            trailing: MunasaknaStatusChip(
+                label: 'قابل للربط', icon: Icons.link_outlined),
             children: [
-              Text('لاحقًا ستظهر أرقام المشرف والمرشد والشركة حسب ملف الحاج، بدون عرض بيانات غير لازمة.'),
+              Text(
+                  'تظهر بيانات المشرف والمرشد عند توفرها من الجهة الرسمية، ولا يعرض التطبيق أرقامًا افتراضية على أنها قابلة للاتصال.'),
             ],
           ),
           const SizedBox(height: 12),
@@ -31,7 +34,8 @@ class ContactsPage extends StatelessWidget {
               subtitle: group.subtitle,
               icon: group.icon,
               children: [
-                for (final contact in group.contacts) _ContactTile(contact: contact),
+                for (final contact in group.contacts)
+                  _ContactTile(contact: contact),
               ],
             ),
             const SizedBox(height: 12),
@@ -57,22 +61,40 @@ class _ContactTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: scheme.primary.withValues(alpha: 0.12)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(contact.icon, color: scheme.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(contact.title, style: const TextStyle(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 3),
-                Text(contact.subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
-              ],
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(contact.icon, color: scheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      contact.title,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      contact.subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          SelectableText(contact.value, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 10),
+          SelectableText(
+            contact.value,
+            textAlign: TextAlign.start,
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
         ],
       ),
     );
@@ -80,7 +102,11 @@ class _ContactTile extends StatelessWidget {
 }
 
 class _ContactGroup {
-  const _ContactGroup({required this.title, required this.subtitle, required this.icon, required this.contacts});
+  const _ContactGroup(
+      {required this.title,
+      required this.subtitle,
+      required this.icon,
+      required this.contacts});
   final String title;
   final String subtitle;
   final IconData icon;
@@ -88,7 +114,11 @@ class _ContactGroup {
 }
 
 class _Contact {
-  const _Contact({required this.title, required this.subtitle, required this.value, required this.icon});
+  const _Contact(
+      {required this.title,
+      required this.subtitle,
+      required this.value,
+      required this.icon});
   final String title;
   final String subtitle;
   final String value;
@@ -96,16 +126,52 @@ class _Contact {
 }
 
 const _contactGroups = [
-  _ContactGroup(title: 'المشرفون', subtitle: 'تظهر لاحقًا حسب الشركة والمجموعة', icon: Icons.groups_outlined, contacts: [
-    _Contact(title: 'مشرف المجموعة', subtitle: 'تجريبي - لا يتصل الآن', value: '+966 000 000 000', icon: Icons.supervisor_account_outlined),
-    _Contact(title: 'مرشد المناسك', subtitle: 'للاستفسار الإرشادي العام', value: '+966 000 000 001', icon: Icons.menu_book_outlined),
-  ]),
-  _ContactGroup(title: 'الدعم والطوارئ', subtitle: 'تصنيف أولي للمساعدة السريعة', icon: Icons.emergency_share_outlined, contacts: [
-    _Contact(title: 'طوارئ صحية', subtitle: 'اتبع التعليمات الرسمية في موقعك', value: '997', icon: Icons.health_and_safety_outlined),
-    _Contact(title: 'دعم ميداني', subtitle: 'عند الضياع أو الانفصال عن المجموعة', value: '+966 000 000 002', icon: Icons.support_agent_outlined),
-  ]),
-  _ContactGroup(title: 'جهات إرشادية', subtitle: 'توجيه للمختص لا للفتوى من التطبيق', icon: Icons.gavel_outlined, contacts: [
-    _Contact(title: 'اللجنة الشرعية', subtitle: 'للمسائل الحساسة والتفصيلية', value: 'داخل نسك لاحقًا', icon: Icons.gavel_outlined),
-    _Contact(title: 'الدعم التقني', subtitle: 'للأخطاء داخل التطبيق', value: 'داخل التطبيق لاحقًا', icon: Icons.bug_report_outlined),
-  ]),
+  _ContactGroup(
+      title: 'المشرفون',
+      subtitle: 'تظهر عند توفر بيانات الشركة والمجموعة',
+      icon: Icons.groups_outlined,
+      contacts: [
+        _Contact(
+            title: 'مشرف المجموعة',
+            subtitle: 'يظهر عند توفر بيانات المجموعة',
+            value: 'يظهر عند توفر بيانات المجموعة',
+            icon: Icons.supervisor_account_outlined),
+        _Contact(
+            title: 'مرشد المناسك',
+            subtitle: 'للاستفسار الإرشادي العام',
+            value: 'يظهر عند توفر بيانات الحملة',
+            icon: Icons.menu_book_outlined),
+      ]),
+  _ContactGroup(
+      title: 'الدعم والطوارئ',
+      subtitle: 'جهات للمساعدة السريعة حسب المعلومات المتاحة',
+      icon: Icons.emergency_share_outlined,
+      contacts: [
+        _Contact(
+            title: 'طوارئ صحية',
+            subtitle: 'اتبع التعليمات الرسمية في موقعك',
+            value: '997',
+            icon: Icons.health_and_safety_outlined),
+        _Contact(
+            title: 'دعم ميداني',
+            subtitle: 'عند الضياع أو الانفصال عن المجموعة',
+            value: 'استخدم الجهة الرسمية أو المشرف',
+            icon: Icons.support_agent_outlined),
+      ]),
+  _ContactGroup(
+      title: 'جهات إرشادية',
+      subtitle: 'توجيه للمختص لا للفتوى من التطبيق',
+      icon: Icons.gavel_outlined,
+      contacts: [
+        _Contact(
+            title: 'اللجنة الشرعية',
+            subtitle: 'للمسائل الحساسة والتفصيلية',
+            value: 'راجع الجهة الشرعية الرسمية',
+            icon: Icons.gavel_outlined),
+        _Contact(
+            title: 'الدعم التقني',
+            subtitle: 'للأخطاء داخل التطبيق',
+            value: 'من خلال دعم التطبيق',
+            icon: Icons.bug_report_outlined),
+      ]),
 ];

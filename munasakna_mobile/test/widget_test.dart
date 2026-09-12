@@ -1,4 +1,5 @@
-import 'package:flutter/widgets.dart' show Scrollable;
+import 'package:flutter/material.dart' show Scaffold;
+import 'package:flutter/widgets.dart' show EditableText, Scrollable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -33,18 +34,10 @@ void main() {
     expect(find.text('دليل المناسك'), findsWidgets);
     expect(find.text('البطاقة الرقمية'), findsWidgets);
     expect(find.text('موقعي الحالي'), findsWidgets);
-
-    await tester.scrollUntilVisible(
-      find.text('وضع التطوير: بلا تسجيل دخول'),
-      350,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('وضع التطوير: بلا تسجيل دخول'), findsOneWidget);
+    expect(find.text('وضع التطوير: بلا تسجيل دخول'), findsNothing);
   });
 
-  testWidgets('primary journey entry opens standalone 1448 activation product',
+  testWidgets('primary journey entry opens truthful public journey',
       (tester) async {
     await tester.pumpWidget(const ProviderScope(child: MunasaknaApp()));
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
@@ -52,9 +45,9 @@ void main() {
     await tester.tap(find.text('رحلتي 1448'));
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-    expect(find.text('فعّل رحلتك 1448'), findsOneWidget);
-    expect(find.textContaining('لا تتصل بنسك'), findsOneWidget);
-    expect(find.text('استخدام رمز تجريبي'), findsOneWidget);
+    expect(find.text('حالة رحلتك'), findsOneWidget);
+    expect(find.text('42%'), findsOneWidget);
+    expect(find.text('استخدام رمز تجريبي'), findsNothing);
   });
 
   testWidgets('legacy journey route remains reachable for compatibility',
@@ -62,7 +55,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MunasaknaApp()));
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-    final context = tester.element(find.text('رحلتي 1448').first);
+    final context = tester.element(find.byType(Scaffold).first);
     context.go(MunasaknaRoutes.journey);
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
@@ -71,7 +64,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('حالة رحلتك'), findsOneWidget);
-    expect(find.text('65%'), findsOneWidget);
+    expect(find.text('42%'), findsOneWidget);
     expect(find.text('المرحلة الحالية'), findsOneWidget);
 
     await tester.scrollUntilVisible(
@@ -97,35 +90,22 @@ void main() {
     expect(find.text('الخدمات'), findsOneWidget);
     expect(find.text('ابحث عن خدمة...'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('اللجنة الشرعية والفتاوى'),
-      350,
-      scrollable: find.byType(Scrollable).first,
-    );
+    final searchField = find.byType(EditableText);
+    expect(searchField, findsOneWidget);
+
+    await tester.enterText(searchField, 'الفتاوى');
     await tester.pumpAndSettle();
     expect(find.text('اللجنة الشرعية والفتاوى'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('الشكاوى والاقتراحات'),
-      350,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.enterText(searchField, 'الشكاوى');
     await tester.pumpAndSettle();
     expect(find.text('الشكاوى والاقتراحات'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('الإشعارات والتنبيهات'),
-      350,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.enterText(searchField, 'الإشعارات');
     await tester.pumpAndSettle();
     expect(find.text('الإشعارات والتنبيهات'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('الإعدادات'),
-      350,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.enterText(searchField, 'إعداد');
     await tester.pumpAndSettle();
     expect(find.text('الإعدادات'), findsOneWidget);
   });

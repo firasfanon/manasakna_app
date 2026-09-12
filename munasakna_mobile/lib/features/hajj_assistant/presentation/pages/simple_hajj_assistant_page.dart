@@ -13,12 +13,14 @@ class SimpleHajjAssistantPage extends StatefulWidget {
   const SimpleHajjAssistantPage({super.key});
 
   @override
-  State<SimpleHajjAssistantPage> createState() => _SimpleHajjAssistantPageState();
+  State<SimpleHajjAssistantPage> createState() =>
+      _SimpleHajjAssistantPageState();
 }
 
 class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
   final TextEditingController _controller = TextEditingController();
-  final SimpleHajjAssistantService _assistant = const SimpleHajjAssistantService();
+  final SimpleHajjAssistantService _assistant =
+      const SimpleHajjAssistantService();
   final TtsGuidanceService _tts = TtsGuidanceService();
   final SpeechInputService _speech = SpeechInputService();
 
@@ -35,7 +37,8 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
   final List<_AssistantMessage> _messages = const [
     _AssistantMessage(
       isUser: false,
-      text: 'السلام عليكم، أنا مساعد مناسكنا الإرشادي. أستمع لسؤالك أو أقرأه كنص، ثم أجيب من مصفوفة الحج v6 وFAQ v2 فقط. لا أفتي ولا أخمّن، وأوجهك للمرشد أو اللجنة الشرعية أو الطوارئ عند الحاجة.',
+      text:
+          'السلام عليكم، أنا مساعد مناسكنا الإرشادي. أستمع لسؤالك أو أقرأه كنص، ثم أجيب من المحتوى الإرشادي المتاح داخل التطبيق. لا أفتي ولا أخمّن، وأوجهك للمرشد أو اللجنة الشرعية أو الطوارئ عند الحاجة.',
       kind: AssistantResponseKind.answer,
     ),
   ].toList();
@@ -56,7 +59,9 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر تشغيل الصوت على هذا الجهاز. تأكد من توفر صوت عربي في إعدادات النظام.')),
+        const SnackBar(
+            content: Text(
+                'تعذر تشغيل الصوت على هذا الجهاز. تأكد من توفر صوت عربي في إعدادات النظام.')),
       );
     } finally {
       if (mounted) setState(() => _isSpeaking = false);
@@ -112,14 +117,18 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
           _speechDraft = text;
           if (text.isNotEmpty) {
             _controller.text = text;
-            _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+            _controller.selection =
+                TextSelection.collapsed(offset: _controller.text.length);
           }
           if (isFinal) {
             _isListening = false;
             _speechStatus = 'تم التقاط السؤال.';
           }
         });
-        if (isFinal && _speechAutoSend && text.trim().isNotEmpty && !_speechSubmitted) {
+        if (isFinal &&
+            _speechAutoSend &&
+            text.trim().isNotEmpty &&
+            !_speechSubmitted) {
           _speechSubmitted = true;
           Future.microtask(() => _ask(text));
         }
@@ -130,10 +139,14 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
   Future<void> _finishListening({required bool submitDraft}) async {
     await _speech.stopListening();
     if (!mounted) return;
-    final captured = _speechDraft.trim().isNotEmpty ? _speechDraft.trim() : _controller.text.trim();
+    final captured = _speechDraft.trim().isNotEmpty
+        ? _speechDraft.trim()
+        : _controller.text.trim();
     setState(() {
       _isListening = false;
-      _speechStatus = captured.isEmpty ? 'توقف الاستماع دون التقاط سؤال واضح.' : 'تم إيقاف الاستماع.';
+      _speechStatus = captured.isEmpty
+          ? 'توقف الاستماع دون التقاط سؤال واضح.'
+          : 'تم إيقاف الاستماع.';
     });
     if (submitDraft && captured.isNotEmpty && !_speechSubmitted) {
       _speechSubmitted = true;
@@ -167,7 +180,8 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
       _speechStatus = message;
       _isListening = false;
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _ask([String? quickQuestion]) {
@@ -181,7 +195,8 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
       isSensitive: response.isSensitive || response.needsSpecialistReferral,
     );
     setState(() {
-      _messages.add(_AssistantMessage(isUser: true, text: question, kind: AssistantResponseKind.question));
+      _messages.add(_AssistantMessage(
+          isUser: true, text: question, kind: AssistantResponseKind.question));
       _messages.add(message);
       _controller.clear();
       _speechDraft = '';
@@ -191,15 +206,21 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
   }
 
   void _useReminder(SmartAssistantReminder reminder) {
-    final responseTitle = reminder.kind == AssistantResponseKind.alert ? 'نبهني: ${reminder.title}' : 'ذكرني: ${reminder.title}';
+    final responseTitle = reminder.kind == AssistantResponseKind.alert
+        ? 'نبهني: ${reminder.title}'
+        : 'ذكرني: ${reminder.title}';
     final message = _AssistantMessage(
       isUser: false,
       kind: reminder.kind,
       isSensitive: reminder.isCritical,
-      text: '${reminder.title}\n\n${reminder.message}\n\nالمرحلة: ${reminder.phaseLabel}\nالإجراء: ${reminder.actionLabel}\n\n${reminder.requiresNusukData ? 'ملاحظة: سيتم تخصيص هذا التذكير لاحقًا من بيانات رسمية مصرح بها عند توفر مزود معتمد.\n' : ''}${reminder.requiresLocation ? 'ملاحظة: يمكن ربطه لاحقًا بالموقع بعد موافقة المستخدم.\n' : ''}الصوت: ${_voiceGuidanceEnabled ? _voiceProfile.labelAr : 'متوقف حاليًا'}',
+      text:
+          '${reminder.title}\n\n${reminder.message}\n\nالمرحلة: ${reminder.phaseLabel}\nالإجراء: ${reminder.actionLabel}\n\n${reminder.requiresNusukData ? 'ملاحظة: سيتم تخصيص هذا التذكير لاحقًا من بيانات رسمية مصرح بها عند توفر مزود معتمد.\n' : ''}${reminder.requiresLocation ? 'ملاحظة: يمكن ربطه لاحقًا بالموقع بعد موافقة المستخدم.\n' : ''}الصوت: ${_voiceGuidanceEnabled ? _voiceProfile.labelAr : 'متوقف حاليًا'}',
     );
     setState(() {
-      _messages.add(_AssistantMessage(isUser: true, text: responseTitle, kind: AssistantResponseKind.question));
+      _messages.add(_AssistantMessage(
+          isUser: true,
+          text: responseTitle,
+          kind: AssistantResponseKind.question));
       _messages.add(message);
     });
     _speakText(message.text);
@@ -225,15 +246,18 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
             supportLabel: _speech.runtimeSupportLabel,
             onMicPressed: _toggleListening,
             onCancel: _cancelListening,
-            onAutoSendChanged: (value) => setState(() => _speechAutoSend = value),
+            onAutoSendChanged: (value) =>
+                setState(() => _speechAutoSend = value),
           ),
           const SizedBox(height: 14),
           _VoiceGuidancePanel(
             selectedProfile: _voiceProfile,
             voiceEnabled: _voiceGuidanceEnabled,
             runtimeSupportLabel: _tts.runtimeSupportLabel,
-            onProfileChanged: (profile) => setState(() => _voiceProfile = profile),
-            onVoiceEnabledChanged: (value) => setState(() => _voiceGuidanceEnabled = value),
+            onProfileChanged: (profile) =>
+                setState(() => _voiceProfile = profile),
+            onVoiceEnabledChanged: (value) =>
+                setState(() => _voiceGuidanceEnabled = value),
           ),
           if (_isSpeaking) ...[
             const SizedBox(height: 14),
@@ -242,18 +266,21 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
           const SizedBox(height: 14),
           const ManasikunaSectionTitle(
             title: 'تذكيرات وتنبيهات ذكية',
-            subtitle: 'تجريبية محلية الآن، وتُخصص لاحقًا حسب بيانات رسمية مصرح بها والموقع بإذن المستخدم',
+            subtitle:
+                'تذكيرات عامة داخل التطبيق، ويمكن تخصيصها لاحقًا عند توفر بيانات رسمية مصرح بها وبموافقة المستخدم على الموقع',
             icon: Icons.notifications_active_rounded,
           ),
           const SizedBox(height: 10),
           for (final reminder in smartAssistantDevelopmentReminders) ...[
-            _ReminderTile(reminder: reminder, onTap: () => _useReminder(reminder)),
+            _ReminderTile(
+                reminder: reminder, onTap: () => _useReminder(reminder)),
             const SizedBox(height: 8),
           ],
           const SizedBox(height: 12),
           const ManasikunaSectionTitle(
             title: 'أسئلة سريعة',
-            subtitle: 'المساعد يسأل ويجيب ضمن حدود المصفوفة ولا يهلوس',
+            subtitle:
+                'المساعد يجيب ضمن المحتوى الإرشادي المتاح، ولا يفتي ولا يخمّن',
             icon: Icons.question_answer_rounded,
           ),
           const SizedBox(height: 10),
@@ -282,7 +309,9 @@ class _SimpleHajjAssistantPageState extends State<SimpleHajjAssistantPage> {
               prefixIcon: IconButton(
                 tooltip: 'اسأل بالصوت',
                 onPressed: _toggleListening,
-                icon: Icon(_isListening ? Icons.stop_circle_rounded : Icons.mic_none_rounded),
+                icon: Icon(_isListening
+                    ? Icons.stop_circle_rounded
+                    : Icons.mic_none_rounded),
               ),
               suffixIcon: IconButton(
                 tooltip: 'إرسال السؤال',
@@ -319,7 +348,8 @@ class _AssistantHero extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: MunasaknaTheme.sacredGradient(scheme),
-        border: Border.all(color: MunasaknaTheme.kiswahGold.withValues(alpha: 0.42)),
+        border: Border.all(
+            color: MunasaknaTheme.kiswahGold.withValues(alpha: 0.42)),
       ),
       child: Row(
         children: [
@@ -329,9 +359,15 @@ class _AssistantHero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('مساعد مناسكنا الإرشادي', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
+                Text('مساعد مناسكنا الإرشادي',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.white, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
-                Text('يستمع، يقرأ، يذكّر، ينبه، ويسأل سؤال متابعة. يعمل على الويب وأندرويد وآيفون، ولا يجيب إلا من مصفوفة الحج وFAQ.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.88), height: 1.45)),
+                Text(
+                    'يستمع، يقرأ، يذكّر، ينبه، ويسأل سؤال متابعة. يعمل على الويب وأندرويد وآيفون، ويجيب ضمن المحتوى الإرشادي المتاح داخل التطبيق.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        height: 1.45)),
               ],
             ),
           ),
@@ -387,16 +423,24 @@ class _VoiceInputPanel extends StatelessWidget {
                   color: tone.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(isListening ? Icons.graphic_eq_rounded : Icons.mic_rounded, color: tone),
+                child: Icon(
+                    isListening ? Icons.graphic_eq_rounded : Icons.mic_rounded,
+                    color: tone),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('اسأل بالصوت', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                    Text('اسأل بالصوت',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900)),
                     const SizedBox(height: 4),
-                    Text(supportLabel, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.45)),
+                    Text(supportLabel,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant, height: 1.45)),
                   ],
                 ),
               ),
@@ -409,7 +453,8 @@ class _VoiceInputPanel extends StatelessWidget {
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   onPressed: onMicPressed,
-                  icon: Icon(isListening ? Icons.stop_rounded : Icons.mic_rounded),
+                  icon: Icon(
+                      isListening ? Icons.stop_rounded : Icons.mic_rounded),
                   label: Text(isListening ? 'إيقاف' : 'تحدث'),
                 ),
               ),
@@ -422,17 +467,28 @@ class _VoiceInputPanel extends StatelessWidget {
             decoration: BoxDecoration(
               color: scheme.surface.withValues(alpha: 0.80),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.55)),
+              border: Border.all(
+                  color: scheme.outlineVariant.withValues(alpha: 0.55)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(isListening ? Icons.hearing_rounded : Icons.info_outline_rounded, color: tone, size: 20),
+                Icon(
+                    isListening
+                        ? Icons.hearing_rounded
+                        : Icons.info_outline_rounded,
+                    color: tone,
+                    size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    draft.trim().isEmpty ? status : '$status\n\nالنص الملتقط: $draft',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.5, fontWeight: FontWeight.w700),
+                    draft.trim().isEmpty
+                        ? status
+                        : '$status\n\nالنص الملتقط: $draft',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(height: 1.5, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -450,7 +506,8 @@ class _VoiceInputPanel extends StatelessWidget {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     title: const Text('إرسال السؤال تلقائيًا بعد الالتقاط'),
-                    subtitle: const Text('يمكن إيقافها لمراجعة النص قبل الإرسال'),
+                    subtitle:
+                        const Text('يمكن إيقافها لمراجعة النص قبل الإرسال'),
                   ),
                 ),
               ),
@@ -466,7 +523,12 @@ class _VoiceInputPanel extends StatelessWidget {
           ),
           if (!speechAvailable && !isListening) ...[
             const SizedBox(height: 4),
-            Text('إن لم يعمل الميكروفون، يبقى إدخال السؤال بالكتابة متاحًا دائمًا.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+            Text(
+                'إن لم يعمل الميكروفون، يبقى إدخال السؤال بالكتابة متاحًا دائمًا.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: scheme.onSurfaceVariant)),
           ],
         ],
       ),
@@ -497,9 +559,13 @@ class _VoiceGuidancePanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.55)),
+        border:
+            Border.all(color: scheme.outlineVariant.withValues(alpha: 0.55)),
         boxShadow: [
-          BoxShadow(color: scheme.shadow.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 8)),
+          BoxShadow(
+              color: scheme.shadow.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -514,16 +580,26 @@ class _VoiceGuidancePanel extends StatelessWidget {
                   color: MunasaknaTheme.kiswahGold.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.volume_up_rounded, color: MunasaknaTheme.deepHaramGreen),
+                child: const Icon(Icons.volume_up_rounded,
+                    color: MunasaknaTheme.deepHaramGreen),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('الصوت والإرشاد', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                    Text('الصوت والإرشاد',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900)),
                     const SizedBox(height: 3),
-                    Text('قراءة الردود والتذكيرات من صوت النظام المتاح على الجهاز أو المتصفح.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                    Text(
+                        'قراءة الردود والتذكيرات من صوت النظام المتاح على الجهاز أو المتصفح.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: scheme.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -539,14 +615,23 @@ class _VoiceGuidancePanel extends StatelessWidget {
                 ChoiceChip(
                   label: Text(profile.labelAr),
                   selected: selectedProfile == profile,
-                  onSelected: voiceEnabled ? (_) => onProfileChanged(profile) : null,
+                  onSelected:
+                      voiceEnabled ? (_) => onProfileChanged(profile) : null,
                 ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(runtimeSupportLabel, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800, height: 1.45)),
+          Text(runtimeSupportLabel,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w800,
+                  height: 1.45)),
           const SizedBox(height: 6),
-          Text(selectedProfile.descriptionAr, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.45)),
+          Text(selectedProfile.descriptionAr,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant, height: 1.45)),
         ],
       ),
     );
@@ -566,7 +651,8 @@ class _SpeakingIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: MunasaknaTheme.kiswahGold.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: MunasaknaTheme.kiswahGold.withValues(alpha: 0.24)),
+        border: Border.all(
+            color: MunasaknaTheme.kiswahGold.withValues(alpha: 0.24)),
       ),
       child: Row(
         children: [
@@ -576,7 +662,11 @@ class _SpeakingIndicator extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('جاري تشغيل الصوت', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+                Text('جاري تشغيل الصوت',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(999),
@@ -610,7 +700,9 @@ class _ReminderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final color = reminder.kind == AssistantResponseKind.alert ? scheme.error : scheme.primary;
+    final color = reminder.kind == AssistantResponseKind.alert
+        ? scheme.error
+        : scheme.primary;
     return InkWell(
       borderRadius: BorderRadius.circular(22),
       onTap: onTap,
@@ -626,17 +718,31 @@ class _ReminderTile extends StatelessWidget {
             Container(
               width: 42,
               height: 42,
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(16)),
-              child: Icon(reminder.kind == AssistantResponseKind.alert ? Icons.warning_amber_rounded : Icons.alarm_rounded, color: color),
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16)),
+              child: Icon(
+                  reminder.kind == AssistantResponseKind.alert
+                      ? Icons.warning_amber_rounded
+                      : Icons.alarm_rounded,
+                  color: color),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(reminder.title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+                  Text(reminder.title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w900)),
                   const SizedBox(height: 3),
-                  Text('${reminder.phaseLabel} • ${reminder.actionLabel}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                  Text('${reminder.phaseLabel} • ${reminder.actionLabel}',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: scheme.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -663,10 +769,13 @@ class _AssistantBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final tone = _toneColor(scheme);
-    final background = message.isUser ? scheme.primary : tone.withValues(alpha: 0.08);
+    final background =
+        message.isUser ? scheme.primary : tone.withValues(alpha: 0.08);
     final foreground = message.isUser ? scheme.onPrimary : scheme.onSurface;
     return Align(
-      alignment: message.isUser ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+      alignment: message.isUser
+          ? AlignmentDirectional.centerEnd
+          : AlignmentDirectional.centerStart,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 430),
         padding: const EdgeInsets.all(13),
@@ -678,7 +787,9 @@ class _AssistantBubble extends StatelessWidget {
             bottomStart: Radius.circular(message.isUser ? 20 : 6),
             bottomEnd: Radius.circular(message.isUser ? 6 : 20),
           ),
-          border: message.isUser ? null : Border.all(color: tone.withValues(alpha: 0.28)),
+          border: message.isUser
+              ? null
+              : Border.all(color: tone.withValues(alpha: 0.28)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -689,12 +800,21 @@ class _AssistantBubble extends StatelessWidget {
                 children: [
                   Icon(_kindIcon(), size: 17, color: tone),
                   const SizedBox(width: 5),
-                  Text(_kindLabel(), style: Theme.of(context).textTheme.labelMedium?.copyWith(color: tone, fontWeight: FontWeight.w900)),
+                  Text(_kindLabel(),
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelMedium
+                          ?.copyWith(color: tone, fontWeight: FontWeight.w900)),
                 ],
               ),
               const SizedBox(height: 7),
             ],
-            Text(message.text, style: TextStyle(color: foreground, height: 1.55, fontWeight: message.isUser ? FontWeight.w800 : FontWeight.w600)),
+            Text(message.text,
+                style: TextStyle(
+                    color: foreground,
+                    height: 1.55,
+                    fontWeight:
+                        message.isUser ? FontWeight.w800 : FontWeight.w600)),
             if (!message.isUser && voiceEnabled && onSpeak != null) ...[
               const SizedBox(height: 8),
               Align(
@@ -753,7 +873,7 @@ class _AssistantBubble extends StatelessWidget {
       case AssistantResponseKind.referral:
         return 'توجيه لجهة الاختصاص';
       case AssistantResponseKind.answer:
-        return 'إجابة من المصفوفة';
+        return 'إجابة إرشادية';
     }
   }
 }
@@ -778,8 +898,9 @@ class _AssistantDisclaimer extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'المساعد إرشادي آمن: لا يصدر فتوى نهائية، ولا يجيب خارج مصفوفة الحج وFAQ. الإدخال الصوتي يحول كلامك إلى نص في صفحة المساعد فقط، والمسائل الخاصة تُحوّل للجنة الشرعية أو المرشد أو الطوارئ حسب الحالة.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.45),
+              'المساعد إرشادي آمن: لا يصدر فتوى نهائية، ولا يجيب خارج المحتوى الإرشادي المتاح داخل التطبيق. الإدخال الصوتي يحول كلامك إلى نص في صفحة المساعد فقط، والمسائل الخاصة تُحوّل للجنة الشرعية أو المرشد أو الطوارئ حسب الحالة.',
+              style:
+                  Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.45),
             ),
           ),
         ],
@@ -789,7 +910,11 @@ class _AssistantDisclaimer extends StatelessWidget {
 }
 
 class _AssistantMessage {
-  const _AssistantMessage({required this.isUser, required this.text, required this.kind, this.isSensitive = false});
+  const _AssistantMessage(
+      {required this.isUser,
+      required this.text,
+      required this.kind,
+      this.isSensitive = false});
 
   final bool isUser;
   final String text;

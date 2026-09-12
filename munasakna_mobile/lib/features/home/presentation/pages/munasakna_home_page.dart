@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/config/munasakna_environment.dart';
 import '../../../../app/router/munasakna_routes.dart';
 import '../../../../app/theme/munasakna_theme.dart';
-import '../../../../core/widgets/development_mode_banner.dart';
 import '../../../../core/widgets/munasakna_bottom_nav.dart';
 
 class MunasaknaHomePage extends StatelessWidget {
@@ -38,14 +37,12 @@ class MunasaknaHomePage extends StatelessWidget {
               const _HeroKaabaPanel(),
               const SizedBox(height: 18),
               _JourneyShortcutCard(
-                  onTap: () => context.push(MunasaknaRoutes.season1448Launch)),
+                  onTap: () => context.push(MunasaknaRoutes.journey)),
               const SizedBox(height: 20),
               const _HomeSectionTitle(title: 'خدمات سريعة'),
               const SizedBox(height: 12),
               const _QuickServicesGrid(),
               const SizedBox(height: 18),
-              const _DevelopmentCompactCard(),
-              const SizedBox(height: 12),
               const _QuranInspirationCard(),
               const SizedBox(height: 10),
               const Text(
@@ -74,7 +71,7 @@ class _HomeTopBar extends StatelessWidget {
       children: [
         _RoundIconButton(
           icon: Icons.notifications_rounded,
-          onTap: () => context.push(MunasaknaRoutes.hajjFaq),
+          onTap: () => context.push(MunasaknaRoutes.notifications),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -188,6 +185,9 @@ class _JourneyShortcutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scaledBody = MediaQuery.textScalerOf(context).scale(16);
+    final accessible = scaledBody >= 24;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -201,7 +201,7 @@ class _JourneyShortcutCard extends StatelessWidget {
               end: AlignmentDirectional.bottomEnd,
               colors: [
                 MunasaknaTheme.deepHaramGreen,
-                MunasaknaTheme.haramGreen
+                MunasaknaTheme.haramGreen,
               ],
             ),
             boxShadow: [
@@ -214,97 +214,104 @@ class _JourneyShortcutCard extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 86,
-                  height: 86,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      PositionedDirectional(
-                        start: 4,
-                        top: 8,
-                        child: Icon(Icons.luggage_rounded,
-                            size: 72,
-                            color: MunasaknaTheme.warmGold
-                                .withValues(alpha: 0.95)),
-                      ),
-                      PositionedDirectional(
-                        end: 2,
-                        bottom: 4,
-                        child: Container(
-                          width: 48,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            color: MunasaknaTheme.deepHaramGreen,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: MunasaknaTheme.kiswahGold, width: 1.2),
-                          ),
-                          child: const Icon(Icons.mosque_rounded,
-                              color: MunasaknaTheme.kiswahGold, size: 22),
-                        ),
-                      ),
-                    ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final illustration = Container(
+                  width: 82,
+                  height: 82,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(24),
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                  child: const Icon(
+                    Icons.luggage_rounded,
+                    size: 52,
+                    color: MunasaknaTheme.warmGold,
+                  ),
+                );
+
+                final copy = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'رحلتي 1448',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      'تابع مراحل رحلتك واستعدادك داخل مناسكنا، مع إظهار أي اعتماد رسمي على نسك بوضوح عند الحاجة.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.chevron_left_rounded,
+                            color: MunasaknaTheme.deepHaramGreen,
+                            size: 19,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'فتح الرحلة',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelLarge
+                                  ?.copyWith(
+                                    color: MunasaknaTheme.deepHaramGreen,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+
+                if (accessible || constraints.maxWidth < 330) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'رحلتي 1448',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                            ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        'الحملة والجدول والتجمعات تعمل محليًا دون الاعتماد على نسك',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.88),
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      const SizedBox(height: 12),
                       Align(
                         alignment: AlignmentDirectional.centerStart,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.92),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.chevron_left_rounded,
-                                  color: MunasaknaTheme.deepHaramGreen,
-                                  size: 19),
-                              const SizedBox(width: 4),
-                              Text(
-                                'فتح الرحلة',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelLarge
-                                    ?.copyWith(
-                                      color: MunasaknaTheme.deepHaramGreen,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        child: illustration,
                       ),
+                      const SizedBox(height: 14),
+                      copy,
                     ],
-                  ),
-                ),
-              ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    illustration,
+                    const SizedBox(width: 14),
+                    Expanded(child: copy),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -336,38 +343,90 @@ class _QuickServicesGrid extends StatelessWidget {
 
   static const _items = [
     _VisualQuickService(
-        'رفيق اليوم', Icons.today_rounded, MunasaknaRoutes.dailyCompanion),
+      'رفيق اليوم',
+      Icons.today_rounded,
+      MunasaknaRoutes.dailyCompanion,
+    ),
     _VisualQuickService(
-        'نوع الحج', Icons.fact_check_rounded, MunasaknaRoutes.hajjType),
-    _VisualQuickService('المواقيت', Icons.flag_rounded, MunasaknaRoutes.miqat),
+      'نوع الحج',
+      Icons.fact_check_rounded,
+      MunasaknaRoutes.hajjType,
+    ),
     _VisualQuickService(
-        'تقويم الحج', Icons.event_note_rounded, MunasaknaRoutes.hajjSchedule),
+      'المواقيت',
+      Icons.flag_rounded,
+      MunasaknaRoutes.miqat,
+    ),
     _VisualQuickService(
-        'الوثائق', Icons.folder_copy_rounded, MunasaknaRoutes.documentsWallet),
+      'تقويم الحج',
+      Icons.event_note_rounded,
+      MunasaknaRoutes.hajjSchedule,
+    ),
     _VisualQuickService(
-        'مجموعتي', Icons.groups_2_rounded, MunasaknaRoutes.groupSupervisor),
-    _VisualQuickService('السكن والنقل', Icons.hotel_rounded,
-        MunasaknaRoutes.accommodationTransport),
+      'الوثائق',
+      Icons.folder_copy_rounded,
+      MunasaknaRoutes.documentsWallet,
+    ),
     _VisualQuickService(
-        'دليل المناسك', Icons.menu_book_rounded, MunasaknaRoutes.rituals),
+      'مجموعتي',
+      Icons.groups_2_rounded,
+      MunasaknaRoutes.groupSupervisor,
+    ),
     _VisualQuickService(
-        'مواقيت الصلاة', Icons.mosque_rounded, MunasaknaRoutes.prayerTimes),
-    _VisualQuickService('البطاقة الرقمية', Icons.qr_code_2_rounded,
-        MunasaknaRoutes.digitalCard),
-    _VisualQuickService('موقعي الحالي', Icons.location_on_outlined,
-        MunasaknaRoutes.currentLocation),
-    _VisualQuickService('المساعد الصوتي', Icons.record_voice_over_rounded,
-        MunasaknaRoutes.hajjAssistant),
+      'السكن والنقل',
+      Icons.hotel_rounded,
+      MunasaknaRoutes.accommodationTransport,
+    ),
     _VisualQuickService(
-        'الهواتف الضرورية', Icons.call_outlined, MunasaknaRoutes.contacts),
+      'دليل المناسك',
+      Icons.menu_book_rounded,
+      MunasaknaRoutes.rituals,
+    ),
     _VisualQuickService(
-        'الإشعارات', Icons.notifications_none_rounded, MunasaknaRoutes.hajjFaq),
+      'مواقيت الصلاة',
+      Icons.mosque_rounded,
+      MunasaknaRoutes.prayerTimes,
+    ),
     _VisualQuickService(
-        'الفتاوى', Icons.help_outline_rounded, MunasaknaRoutes.fatwa),
-    _VisualQuickService('الشكاوى', Icons.chat_bubble_outline_rounded,
-        MunasaknaRoutes.complaints),
+      'البطاقة الرقمية',
+      Icons.qr_code_2_rounded,
+      MunasaknaRoutes.digitalCard,
+    ),
     _VisualQuickService(
-        'الاستبيانات', Icons.fact_check_outlined, MunasaknaRoutes.survey),
+      'موقعي الحالي',
+      Icons.location_on_outlined,
+      MunasaknaRoutes.currentLocation,
+    ),
+    _VisualQuickService(
+      'المساعد الصوتي',
+      Icons.record_voice_over_rounded,
+      MunasaknaRoutes.hajjAssistant,
+    ),
+    _VisualQuickService(
+      'الهواتف الضرورية',
+      Icons.call_outlined,
+      MunasaknaRoutes.contacts,
+    ),
+    _VisualQuickService(
+      'الإشعارات',
+      Icons.notifications_none_rounded,
+      MunasaknaRoutes.notifications,
+    ),
+    _VisualQuickService(
+      'الفتاوى',
+      Icons.help_outline_rounded,
+      MunasaknaRoutes.fatwa,
+    ),
+    _VisualQuickService(
+      'الشكاوى',
+      Icons.chat_bubble_outline_rounded,
+      MunasaknaRoutes.complaints,
+    ),
+    _VisualQuickService(
+      'الاستبيانات',
+      Icons.fact_check_outlined,
+      MunasaknaRoutes.survey,
+    ),
   ];
 
   @override
@@ -435,7 +494,11 @@ class _QuickServiceCard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(item.icon, color: MunasaknaTheme.deepHaramGreen, size: 31),
+                Icon(
+                  item.icon,
+                  color: MunasaknaTheme.deepHaramGreen,
+                  size: 31,
+                ),
                 const SizedBox(height: 9),
                 Text(
                   item.title,
@@ -454,15 +517,6 @@ class _QuickServiceCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _DevelopmentCompactCard extends StatelessWidget {
-  const _DevelopmentCompactCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const DevelopmentModeBanner(compact: true);
   }
 }
 
