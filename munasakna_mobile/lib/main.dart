@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'app/munasakna_app.dart';
 import 'core/diagnostics/app_diagnostics.dart';
@@ -13,6 +14,7 @@ void main() {
   runZonedGuarded<void>(
     () {
       WidgetsFlutterBinding.ensureInitialized();
+      usePathUrlStrategy();
 
       final previousFlutterErrorHandler = FlutterError.onError;
       FlutterError.onError = (FlutterErrorDetails details) {
