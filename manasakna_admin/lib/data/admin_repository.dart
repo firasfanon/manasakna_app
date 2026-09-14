@@ -53,6 +53,11 @@ class AdminRepository {
     return _map(data);
   }
 
+  Future<Map<String, dynamic>> runSyntheticE2E() async {
+    final data = await client.rpc('rpc_manasakna_synthetic_e2e_v1');
+    return _map(data);
+  }
+
   Future<List<Map<String, dynamic>>> campaigns({String? seasonId}) async {
     final data = await client.rpc(
       'rpc_manasakna_campaigns_v1',
@@ -75,6 +80,33 @@ class AdminRepository {
     final data = await client.rpc(
       'rpc_manasakna_group_upsert_v1',
       params: {'p_payload': payload},
+    );
+    return _singleRow(data);
+  }
+
+  Future<List<Map<String, dynamic>>> campaignGroups(String campaignId) async {
+    final data = await client.rpc(
+      'rpc_manasakna_campaign_groups_v1',
+      params: {'p_campaign_id': campaignId},
+    );
+    return _rows(data);
+  }
+
+  Future<List<Map<String, dynamic>>> groupMembers(String groupId) async {
+    final data = await client.rpc(
+      'rpc_manasakna_group_members_v1',
+      params: {'p_group_id': groupId},
+    );
+    return _rows(data);
+  }
+
+  Future<Map<String, dynamic>> assignSelectedPilgrim({
+    required String groupId,
+    required String lotteryEntryId,
+  }) async {
+    final data = await client.rpc(
+      'rpc_manasakna_group_member_assign_v1',
+      params: {'p_group_id': groupId, 'p_lottery_entry_id': lotteryEntryId},
     );
     return _singleRow(data);
   }
