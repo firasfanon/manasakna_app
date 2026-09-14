@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/munasakna_routes.dart';
@@ -6,12 +7,15 @@ import '../../../../core/widgets/info_section_card.dart';
 import '../../../../core/widgets/manasikuna_visual_identity.dart';
 import '../../../../core/widgets/munasakna_app_scaffold.dart';
 import '../../../../core/widgets/munasakna_status_chip.dart';
+import '../../../standalone_backend/application/manasakna_standalone_backend_providers.dart';
 
-class GuidancePage extends StatelessWidget {
+class GuidancePage extends ConsumerWidget {
   const GuidancePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final published =
+        ref.watch(manasaknaGuidanceContentProvider).asData?.value ?? const [];
     return MunasaknaAppScaffold(
       title: 'مواعظ وأحكام',
       headerIcon: Icons.menu_book_outlined,
@@ -20,15 +24,38 @@ class GuidancePage extends StatelessWidget {
         children: [
           const InfoSectionCard(
             title: 'إرشاد معتدل للحاج',
-            subtitle: 'محتوى توعوي مختصر مرتبط بالمرحلة، ولا يحل محل فتوى اللجنة الشرعية.',
+            subtitle:
+                'محتوى توعوي مختصر مرتبط بالمرحلة، ولا يحل محل فتوى اللجنة الشرعية.',
             icon: Icons.menu_book_outlined,
-            trailing: MunasaknaStatusChip(label: 'معتدل', icon: Icons.balance_outlined),
+            trailing: MunasaknaStatusChip(
+                label: 'معتدل', icon: Icons.balance_outlined),
             children: [
-              Text('يركز هذا الدليل على الطمأنينة، حسن الخلق، اتباع التعليمات، وتجنب التشدد أو التساهل في مواضع الأركان والواجبات.'),
+              Text(
+                  'يركز هذا الدليل على الطمأنينة، حسن الخلق، اتباع التعليمات، وتجنب التشدد أو التساهل في مواضع الأركان والواجبات.'),
             ],
           ),
           const SizedBox(height: 12),
-          const ManasikunaSectionTitle(title: 'إرشادات حسب المرحلة', subtitle: 'تظهر لاحقًا ديناميكيًا حسب الزمان والمكان', icon: Icons.timeline_outlined),
+          if (published.isNotEmpty) ...[
+            InfoSectionCard(
+              title: 'إرشاد منشور للموسم',
+              subtitle: 'محتوى ديناميكي من لوحة إدارة مناسكنا المستقلة.',
+              icon: Icons.cloud_done_outlined,
+              children: [
+                for (final item in published)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(item.titleAr,
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text(item.bodyAr),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+          const ManasikunaSectionTitle(
+              title: 'إرشادات حسب المرحلة',
+              subtitle: 'تظهر لاحقًا ديناميكيًا حسب الزمان والمكان',
+              icon: Icons.timeline_outlined),
           const SizedBox(height: 10),
           for (final item in _guidanceItems) ...[
             _GuidanceCard(item: item),
@@ -38,14 +65,22 @@ class GuidancePage extends StatelessWidget {
             title: 'عند الشك',
             icon: Icons.help_outline,
             children: [
-              const Text('إن تعلّق السؤال بترك ركن، ترك واجب، محظور إحرام، عذر صحي، أو حالة خاصة؛ فالأولى مراجعة اللجنة الشرعية أو المرشد المعتمد.'),
+              const Text(
+                  'إن تعلّق السؤال بترك ركن، ترك واجب، محظور إحرام، عذر صحي، أو حالة خاصة؛ فالأولى مراجعة اللجنة الشرعية أو المرشد المعتمد.'),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  FilledButton.icon(onPressed: () => context.push(MunasaknaRoutes.fatwa), icon: const Icon(Icons.gavel_outlined), label: const Text('اللجنة الشرعية')),
-                  OutlinedButton.icon(onPressed: () => context.push(MunasaknaRoutes.hajjAssistant), icon: const Icon(Icons.smart_toy_outlined), label: const Text('اسأل المساعد')),
+                  FilledButton.icon(
+                      onPressed: () => context.push(MunasaknaRoutes.fatwa),
+                      icon: const Icon(Icons.gavel_outlined),
+                      label: const Text('اللجنة الشرعية')),
+                  OutlinedButton.icon(
+                      onPressed: () =>
+                          context.push(MunasaknaRoutes.hajjAssistant),
+                      icon: const Icon(Icons.smart_toy_outlined),
+                      label: const Text('اسأل المساعد')),
                 ],
               ),
             ],
@@ -74,7 +109,8 @@ class _GuidanceCard extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final tag in item.tags) MunasaknaStatusChip(label: tag, icon: Icons.check_circle_outline),
+            for (final tag in item.tags)
+              MunasaknaStatusChip(label: tag, icon: Icons.check_circle_outline),
           ],
         ),
       ],
@@ -83,7 +119,12 @@ class _GuidanceCard extends StatelessWidget {
 }
 
 class _GuidanceItem {
-  const _GuidanceItem({required this.title, required this.phase, required this.summary, required this.icon, required this.tags});
+  const _GuidanceItem(
+      {required this.title,
+      required this.phase,
+      required this.summary,
+      required this.icon,
+      required this.tags});
   final String title;
   final String phase;
   final String summary;
@@ -92,9 +133,39 @@ class _GuidanceItem {
 }
 
 const _guidanceItems = [
-  _GuidanceItem(title: 'قبل السفر', phase: 'استعداد وطمأنينة', summary: 'تعلم الأساسيات، راجع الوثائق، وخذ بالأسباب دون قلق. الحج رحلة إيمانية منظمة وليست اختبارًا للارتباك.', icon: Icons.flight_takeoff_outlined, tags: ['تعلم', 'تنظيم', 'نية صالحة']),
-  _GuidanceItem(title: 'عند الإحرام', phase: 'الميقات والنية', summary: 'الإحرام نية دخول في النسك، ويبدأ بعدها الالتزام بالمحظورات والتلبية. الصيغ المعروضة للتعليم لا للحصر.', icon: Icons.flag_outlined, tags: ['نية', 'تلبية', 'محظورات']),
-  _GuidanceItem(title: 'في عرفة', phase: 'ركن الحج الأعظم', summary: 'أكثر من الدعاء والذكر، والزم مجموعتك، ولا تجعل الانشغال بالتصوير أو القلق يطغى على روح اليوم.', icon: Icons.landscape_outlined, tags: ['دعاء', 'ذكر', 'سكينة']),
-  _GuidanceItem(title: 'في الزحام', phase: 'سلامة ورفق', summary: 'الرفق بالحجاج من تمام العبادة. لا تزاحم، واتبع التفويج، وقدم السلامة عند التعب أو الخطر.', icon: Icons.groups_outlined, tags: ['رفق', 'سلامة', 'اتباع التعليمات']),
-  _GuidanceItem(title: 'بعد العودة', phase: 'أثر الحج', summary: 'حافظ على أثر العبادة في الخلق والسلوك، وأكمل التقييم والملاحظات لتحسين خدمة الحجاج.', icon: Icons.home_outlined, tags: ['استمرار', 'تقييم', 'شكر']),
+  _GuidanceItem(
+      title: 'قبل السفر',
+      phase: 'استعداد وطمأنينة',
+      summary:
+          'تعلم الأساسيات، راجع الوثائق، وخذ بالأسباب دون قلق. الحج رحلة إيمانية منظمة وليست اختبارًا للارتباك.',
+      icon: Icons.flight_takeoff_outlined,
+      tags: ['تعلم', 'تنظيم', 'نية صالحة']),
+  _GuidanceItem(
+      title: 'عند الإحرام',
+      phase: 'الميقات والنية',
+      summary:
+          'الإحرام نية دخول في النسك، ويبدأ بعدها الالتزام بالمحظورات والتلبية. الصيغ المعروضة للتعليم لا للحصر.',
+      icon: Icons.flag_outlined,
+      tags: ['نية', 'تلبية', 'محظورات']),
+  _GuidanceItem(
+      title: 'في عرفة',
+      phase: 'ركن الحج الأعظم',
+      summary:
+          'أكثر من الدعاء والذكر، والزم مجموعتك، ولا تجعل الانشغال بالتصوير أو القلق يطغى على روح اليوم.',
+      icon: Icons.landscape_outlined,
+      tags: ['دعاء', 'ذكر', 'سكينة']),
+  _GuidanceItem(
+      title: 'في الزحام',
+      phase: 'سلامة ورفق',
+      summary:
+          'الرفق بالحجاج من تمام العبادة. لا تزاحم، واتبع التفويج، وقدم السلامة عند التعب أو الخطر.',
+      icon: Icons.groups_outlined,
+      tags: ['رفق', 'سلامة', 'اتباع التعليمات']),
+  _GuidanceItem(
+      title: 'بعد العودة',
+      phase: 'أثر الحج',
+      summary:
+          'حافظ على أثر العبادة في الخلق والسلوك، وأكمل التقييم والملاحظات لتحسين خدمة الحجاج.',
+      icon: Icons.home_outlined,
+      tags: ['استمرار', 'تقييم', 'شكر']),
 ];

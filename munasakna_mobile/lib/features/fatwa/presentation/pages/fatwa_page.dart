@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/munasakna_routes.dart';
@@ -6,12 +7,15 @@ import '../../../../app/theme/munasakna_theme.dart';
 import '../../../../core/widgets/info_section_card.dart';
 import '../../../../core/widgets/munasakna_app_scaffold.dart';
 import '../../../../core/widgets/munasakna_status_chip.dart';
+import '../../../standalone_backend/application/manasakna_standalone_backend_providers.dart';
 
-class FatwaPage extends StatelessWidget {
+class FatwaPage extends ConsumerWidget {
   const FatwaPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final published =
+        ref.watch(manasaknaFatwaContentProvider).asData?.value ?? const [];
     return MunasaknaAppScaffold(
       title: 'اللجنة الشرعية',
       headerIcon: Icons.gavel_outlined,
@@ -33,6 +37,23 @@ class FatwaPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          if (published.isNotEmpty) ...[
+            InfoSectionCard(
+              title: 'فتاوى وإرشادات منشورة للموسم',
+              subtitle: 'محتوى منشور من لوحة إدارة مناسكنا المستقلة.',
+              icon: Icons.cloud_done_outlined,
+              children: [
+                for (final item in published)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(item.titleAr,
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text(item.bodyAr),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
           for (final group in _fatwaGroups) ...[
             InfoSectionCard(
               title: group.title,

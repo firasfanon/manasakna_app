@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../standalone_backend/application/manasakna_standalone_backend_providers.dart';
+import '../../standalone_backend/data/manasakna_standalone_backend_client.dart';
+import '../../standalone_backend/domain/manasakna_standalone_backend_models.dart';
 import '../data/manasikuna_1448_local_store.dart';
 import '../data/manasikuna_1448_synthetic_source.dart';
 import '../domain/manasikuna_1448_contract_policy.dart';
@@ -24,40 +27,49 @@ final manasikuna1448LaunchControllerProvider = AsyncNotifierProvider<
 
 class Manasikuna1448LaunchController
     extends AsyncNotifier<Manasikuna1448LaunchState> {
-  static const _waveCPolicy =
+  static const _policy =
       Manasikuna1448WaveCContractPolicy.syntheticFixturesOnly();
-
   @override
   Future<Manasikuna1448LaunchState> build() async {
     final store = ref.read(manasikuna1448LocalStoreProvider);
     final session = await store.restore();
-
-    if (session == null) {
-      return Manasikuna1448LaunchState.inactive();
-    }
+    if (session == null) return Manasikuna1448LaunchState.inactive();
 
     final now = DateTime.now().toUtc();
-    if (!session.isCredentialValidAt(now)) {
+    if (!session.isCredentialValidAt(now) || !_validContracts(session, now)) {
       await store.clear();
       return Manasikuna1448LaunchState.inactive(
-        statusMessageCode: 'offline_activation_expired',
+        statusMessageCode: 'offline_contract_or_session_invalid',
       );
     }
 
-    final profileViolation = _waveCPolicy.profileViolation(
-      session.profile,
-      now,
-    );
-    final packViolation = _waveCPolicy.campaignPackViolation(
-      profile: session.profile,
-      pack: session.pack,
-      moment: now,
-    );
-    if (profileViolation != null || packViolation != null) {
-      await store.clear();
-      return Manasikuna1448LaunchState.inactive(
-        statusMessageCode: 'offline_contract_invalid',
-      );
+    final backend = ref.read(manasaknaStandaloneBackendProvider);
+    final sessionToken = session.sessionToken?.trim();
+    if (backend.isConfigured &&
+        sessionToken != null &&
+        sessionToken.isNotEmpty) {
+      try {
+        final context = await backend.revalidate(sessionToken);
+        final refreshed = _sessionFromBackend(
+          context,
+          now: now,
+          activatedAt: session.activatedAtUtc,
+        );
+        await store.save(refreshed);
+        return Manasikuna1448LaunchState.active(
+          refreshed,
+          statusMessageCode: 'backend_session_revalidated',
+        );
+      } on ManasaknaBackendException catch (error) {
+        if (error.authoritative) {
+          await store.clear();
+          return Manasikuna1448LaunchState.inactive(
+            statusMessageCode: 'backend_${error.code}',
+          );
+        }
+      } catch (_) {
+        // Network/transport failure keeps a previously valid governed snapshot.
+      }
     }
 
     return Manasikuna1448LaunchState.active(
@@ -71,32 +83,44 @@ class Manasikuna1448LaunchController
 
   Future<void> activate(String rawToken) async {
     state = const AsyncLoading<Manasikuna1448LaunchState>();
-
     state = await AsyncValue.guard(() async {
       final now = DateTime.now().toUtc();
+      final backend = ref.read(manasaknaStandaloneBackendProvider);
+      if (backend.isConfigured) {
+        try {
+          final context = await backend.activate(rawToken);
+          final session = _sessionFromBackend(context, now: now);
+          await ref.read(manasikuna1448LocalStoreProvider).save(session);
+          return Manasikuna1448LaunchState.active(
+            session,
+            statusMessageCode: 'activation_success_backend',
+          );
+        } on ManasaknaBackendException catch (error) {
+          return Manasikuna1448LaunchState.inactive(
+            statusMessageCode: 'backend_${error.code}',
+          );
+        }
+      }
+
       final source = ref.read(manasikuna1448SyntheticSourceProvider);
       final bundle = source.bundleForToken(rawToken, now: now);
-
       if (bundle == null) {
         return Manasikuna1448LaunchState.inactive(
           statusMessageCode: 'activation_token_invalid',
         );
       }
-
       final runtime = Manasikuna1448Runtime(
         standaloneProfileProvider:
             const Manasikuna1448NullStandaloneProfileProvider(),
         campaignProfileProvider: bundle.profileProvider,
         campaignOperationalProvider: bundle.operationalProvider,
         requestedMode: ManasikunaIntegrationMode.campaignConnected,
-        waveCContractPolicy: _waveCPolicy,
+        waveCContractPolicy: _policy,
       );
-
       final resolved = await runtime.resolve(
         activation: bundle.credential,
         now: now,
       );
-
       if (resolved.resolution.effectiveMode !=
               ManasikunaIntegrationMode.campaignConnected ||
           resolved.profile == null ||
@@ -106,7 +130,6 @@ class Manasikuna1448LaunchController
               resolved.resolution.fallbackReasonCode ?? 'activation_failed',
         );
       }
-
       final session = Manasikuna1448LaunchSession(
         profile: resolved.profile!,
         pack: resolved.campaignPack!,
@@ -114,14 +137,57 @@ class Manasikuna1448LaunchController
         credentialExpiresAtUtc: bundle.credential.expiresAt.toUtc(),
         savedAtUtc: now,
       );
-
       await ref.read(manasikuna1448LocalStoreProvider).save(session);
-
       return Manasikuna1448LaunchState.active(
         session,
         statusMessageCode: 'activation_success_synthetic',
       );
     });
+  }
+
+  Manasikuna1448LaunchSession _sessionFromBackend(
+    ManasaknaBackendActivationContext context, {
+    required DateTime now,
+    DateTime? activatedAt,
+  }) {
+    final profile = context.profile;
+    final pack = context.pack;
+    if (!profile.isActivationEligible ||
+        _policy.profileViolation(profile, now) != null ||
+        _policy.campaignPackViolation(
+              profile: profile,
+              pack: pack,
+              moment: now,
+            ) !=
+            null ||
+        profile.campaignReference?.trim() != pack.campaignReference.trim() ||
+        profile.groupReference?.trim() != pack.groupReference?.trim() ||
+        context.sessionToken.trim().isEmpty ||
+        !context.sessionExpiresAt.toUtc().isAfter(now)) {
+      throw const ManasaknaBackendException(
+        'governed_context_rejected',
+        authoritative: true,
+      );
+    }
+    return Manasikuna1448LaunchSession(
+      profile: profile,
+      pack: pack,
+      activatedAtUtc: (activatedAt ?? now).toUtc(),
+      credentialExpiresAtUtc: context.sessionExpiresAt.toUtc(),
+      savedAtUtc: now,
+      sessionToken: context.sessionToken,
+    );
+  }
+
+  bool _validContracts(Manasikuna1448LaunchSession session, DateTime now) {
+    return session.profile.isActivationEligible &&
+        _policy.profileViolation(session.profile, now) == null &&
+        _policy.campaignPackViolation(
+              profile: session.profile,
+              pack: session.pack,
+              moment: now,
+            ) ==
+            null;
   }
 
   Future<void> clearActivation() async {
