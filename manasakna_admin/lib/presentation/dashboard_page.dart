@@ -164,6 +164,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _seedSeason1448() async {
     await _runAction(() async {
       await widget.repository.upsertSeason({
+        'season_code': 'H1448',
         'title_ar': 'موسم حج 1448',
         'hijri_year': 1448,
         'status': 'draft',
@@ -188,6 +189,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _seedNotification() async {
     await _runAction(() async {
       await widget.repository.upsertNotification({
+        'season_code': 'H1448',
         'title_ar': 'تنبيه تجريبي 1448',
         'body_ar': 'هذا إشعار اصطناعي لاختبار لوحة مناسكنا.',
         'audience': {'kind': 'all'},
@@ -328,6 +330,25 @@ class _LotterySectionState extends State<_LotterySection> {
     }
   }
 
+  Future<void> _runSyntheticE2E() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final result = await widget.repository.runSyntheticE2E();
+      if (!mounted) return;
+      setState(
+        () => _message = const JsonEncoder.withIndent('  ').convert(result),
+      );
+      widget.onChanged();
+    } catch (error) {
+      if (mounted) setState(() => _message = 'E2E ERROR: $error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return _SectionFrame(
@@ -339,6 +360,11 @@ class _LotterySectionState extends State<_LotterySection> {
           onPressed: _busy ? null : _seedFixture,
           icon: const Icon(Icons.science_outlined),
           label: Text(_busy ? 'جارٍ التنفيذ…' : 'إنشاء وتشغيل عينة 12 حالة'),
+        ),
+        OutlinedButton.icon(
+          onPressed: _busy ? null : _runSyntheticE2E,
+          icon: const Icon(Icons.verified_outlined),
+          label: const Text('E2E: القرعة ← المجموعة ← التفعيل'),
         ),
       ],
       child: Column(

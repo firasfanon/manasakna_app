@@ -404,11 +404,20 @@ begin
     insert into manasakna.seasons(
       season_code,title_ar,title_en,hijri_year,gregorian_year,status,settings,created_by,updated_by
     ) values (
-      p_payload->>'season_code', p_payload->>'title_ar', nullif(p_payload->>'title_en',''),
-      nullif(p_payload->>'hijri_year','')::integer, nullif(p_payload->>'gregorian_year','')::integer,
-      coalesce(nullif(p_payload->>'status',''),'draft'), coalesce(p_payload->'settings','{}'::jsonb),
-      auth.uid(), auth.uid()
-    ) returning * into v_row;
+      p_payload->>'season_code',p_payload->>'title_ar',nullif(p_payload->>'title_en',''),
+      nullif(p_payload->>'hijri_year','')::integer,nullif(p_payload->>'gregorian_year','')::integer,
+      coalesce(nullif(p_payload->>'status',''),'draft'),coalesce(p_payload->'settings','{}'::jsonb),
+      auth.uid(),auth.uid()
+    )
+    on conflict (season_code) do update set
+      title_ar=excluded.title_ar,
+      title_en=excluded.title_en,
+      hijri_year=coalesce(excluded.hijri_year,manasakna.seasons.hijri_year),
+      gregorian_year=coalesce(excluded.gregorian_year,manasakna.seasons.gregorian_year),
+      status=excluded.status,
+      settings=excluded.settings,
+      updated_by=auth.uid()
+    returning * into v_row;
   else
     select to_jsonb(s.*) into v_before from manasakna.seasons s where s.id=v_id;
     update manasakna.seasons s set
@@ -418,7 +427,7 @@ begin
       hijri_year=coalesce(nullif(p_payload->>'hijri_year','')::integer,s.hijri_year),
       gregorian_year=coalesce(nullif(p_payload->>'gregorian_year','')::integer,s.gregorian_year),
       status=coalesce(nullif(p_payload->>'status',''),s.status),
-      settings=coalesce(p_payload->'settings',s.settings), updated_by=auth.uid()
+      settings=coalesce(p_payload->'settings',s.settings),updated_by=auth.uid()
     where s.id=v_id returning * into v_row;
   end if;
   perform manasakna.audit_v1('season_upsert','season',v_row.id::text,v_before,to_jsonb(v_row));
@@ -652,13 +661,13 @@ end;
 $$;
 
 create or replace function public.rpc_manasakna_lottery_results_v1(p_round_id uuid)
-returns table(applicant_ref text,display_name text,outcome text,rank_no integer,score_hash text)
+returns table(entry_id uuid,applicant_ref text,display_name text,outcome text,rank_no integer,score_hash text)
 language plpgsql stable security definer
 set search_path = pg_catalog, manasakna
 as $$
 begin
   perform manasakna.require_permission_v1('view');
-  return query select e.applicant_ref,e.display_name,r.outcome,r.rank_no,r.score_hash
+  return query select e.id,e.applicant_ref,e.display_name,r.outcome,r.rank_no,r.score_hash
   from manasakna.lottery_results r join manasakna.lottery_entries e on e.id=r.entry_id
   where r.round_id=p_round_id
   order by case r.outcome when 'selected' then 1 when 'waitlisted' then 2 else 3 end,
@@ -817,6 +826,107 @@ begin
 end;
 $$;
 
+create or replace function public.rpc_manasakna_campaign_groups_v1(p_campaign_id uuid default null)
+returns table(
+  id uuid,campaign_id uuid,group_code text,title_ar text,capacity integer,
+  supervisor_label text,status text,member_count bigint
+)
+language plpgsql stable security definer
+set search_path = pg_catalog, manasakna
+as $$
+begin
+  perform manasakna.require_permission_v1('view');
+  return query select g.id,g.campaign_id,g.group_code,g.title_ar,g.capacity,
+    g.supervisor_label,g.status,count(m.id)
+  from manasakna.campaign_groups g
+  left join manasakna.group_members m on m.group_id=g.id and m.status<>'cancelled'
+  where p_campaign_id is null or g.campaign_id=p_campaign_id
+  group by g.id order by g.created_at desc;
+end;
+$$;
+
+create or replace function public.rpc_manasakna_group_members_v1(p_group_id uuid)
+returns table(
+  id uuid,group_id uuid,lottery_entry_id uuid,applicant_ref text,
+  display_name text,status text,lottery_outcome text
+)
+language plpgsql stable security definer
+set search_path = pg_catalog, manasakna
+as $$
+begin
+  perform manasakna.require_permission_v1('view');
+  return query
+  select m.id,m.group_id,m.lottery_entry_id,m.applicant_ref,m.display_name,m.status,r.outcome
+  from manasakna.group_members m
+  left join manasakna.lottery_results r on r.entry_id=m.lottery_entry_id
+  where m.group_id=p_group_id
+  order by m.created_at;
+end;
+$$;
+
+create or replace function public.rpc_manasakna_group_member_assign_v1(
+  p_group_id uuid, p_lottery_entry_id uuid
+) returns manasakna.group_members
+language plpgsql security definer
+set search_path = pg_catalog, manasakna
+as $$
+declare
+  v_campaign_id uuid;
+  v_season_id uuid;
+  v_capacity integer;
+  v_applicant_ref text;
+  v_display_name text;
+  v_row manasakna.group_members%rowtype;
+begin
+  perform manasakna.require_permission_v1('manage_campaigns');
+  select g.campaign_id,c.season_id,g.capacity,e.applicant_ref,e.display_name
+  into v_campaign_id,v_season_id,v_capacity,v_applicant_ref,v_display_name
+  from manasakna.campaign_groups g
+  join manasakna.campaigns c on c.id=g.campaign_id
+  join manasakna.lottery_entries e on e.id=p_lottery_entry_id
+  join manasakna.lottery_rounds lrnd on lrnd.id=e.round_id and lrnd.season_id=c.season_id
+  join manasakna.lottery_results lres on lres.round_id=lrnd.id and lres.entry_id=e.id
+  where g.id=p_group_id
+    and g.status in ('draft','active')
+    and c.status in ('draft','active')
+    and lres.outcome='selected';
+  if not found then
+    raise exception 'MANASAKNA_ONLY_SELECTED_PILGRIM_ASSIGNABLE';
+  end if;
+  if exists (
+    select 1 from manasakna.group_members m
+    join manasakna.campaign_groups og on og.id=m.group_id
+    where og.campaign_id=v_campaign_id and m.applicant_ref=v_applicant_ref
+      and m.group_id<>p_group_id and m.status<>'cancelled'
+  ) then
+    raise exception 'MANASAKNA_ALREADY_ASSIGNED_TO_CAMPAIGN';
+  end if;
+  if v_capacity is not null and not exists (
+    select 1 from manasakna.group_members m
+    where m.group_id=p_group_id and m.applicant_ref=v_applicant_ref and m.status<>'cancelled'
+  ) and (
+    select count(*) from manasakna.group_members m
+    where m.group_id=p_group_id and m.status<>'cancelled'
+  ) >= v_capacity then
+    raise exception 'MANASAKNA_GROUP_CAPACITY_REACHED';
+  end if;
+  insert into manasakna.group_members(
+    group_id,lottery_entry_id,applicant_ref,display_name,status,created_by
+  ) values (
+    p_group_id,p_lottery_entry_id,v_applicant_ref,v_display_name,'assigned',auth.uid()
+  )
+  on conflict (group_id,applicant_ref) do update set
+    lottery_entry_id=excluded.lottery_entry_id,
+    display_name=excluded.display_name,
+    status='assigned'
+  returning * into v_row;
+  perform manasakna.audit_v1(
+    'group_member_assign','group_member',v_row.id::text,null,to_jsonb(v_row)
+  );
+  return v_row;
+end;
+$$;
+
 create or replace function public.rpc_manasakna_issue_activation_v1(
   p_campaign_id uuid, p_applicant_ref text, p_expires_at timestamptz default null
 ) returns jsonb
@@ -829,8 +939,26 @@ declare
   v_id uuid;
 begin
   perform manasakna.require_permission_v1('manage_activation');
-  if nullif(p_applicant_ref,'') is null then raise exception 'MANASAKNA_APPLICANT_REF_REQUIRED'; end if;
-  update manasakna.activation_tokens set status='revoked',revoked_at=now()
+  if nullif(p_applicant_ref,'') is null then
+    raise exception 'MANASAKNA_APPLICANT_REF_REQUIRED';
+  end if;
+  if not exists (
+    select 1
+    from manasakna.group_members gm
+    join manasakna.campaign_groups g on g.id=gm.group_id
+    join manasakna.campaigns c on c.id=g.campaign_id
+    join manasakna.lottery_entries e on e.id=gm.lottery_entry_id
+    join manasakna.lottery_rounds lrnd on lrnd.id=e.round_id and lrnd.season_id=c.season_id
+    join manasakna.lottery_results lres on lres.round_id=lrnd.id and lres.entry_id=e.id
+    where g.campaign_id=p_campaign_id and gm.applicant_ref=p_applicant_ref
+      and gm.status in ('assigned','activated')
+      and g.status in ('draft','active') and c.status in ('draft','active')
+      and lres.outcome='selected'
+  ) then
+    raise exception 'MANASAKNA_ACTIVATION_REQUIRES_SELECTED_ASSIGNED_PILGRIM';
+  end if;
+  update manasakna.activation_tokens
+  set status='revoked',revoked_at=now()
   where campaign_id=p_campaign_id and applicant_ref=p_applicant_ref and status='active';
   v_token := encode(gen_random_bytes(24),'hex');
   v_hash := encode(digest(v_token,'sha256'),'hex');
@@ -839,9 +967,17 @@ begin
   ) values (
     p_campaign_id,p_applicant_ref,v_hash,left(v_token,6)||'…',p_expires_at,auth.uid()
   ) returning id into v_id;
-  perform manasakna.audit_v1('activation_issue','activation_token',v_id::text,null,
-    jsonb_build_object('campaign_id',p_campaign_id,'applicant_ref',p_applicant_ref,'token_hint',left(v_token,6)||'…'));
-  return jsonb_build_object('activation_id',v_id,'token',v_token,'token_hint',left(v_token,6)||'…','shown_once',true);
+  perform manasakna.audit_v1(
+    'activation_issue','activation_token',v_id::text,null,
+    jsonb_build_object(
+      'campaign_id',p_campaign_id,'applicant_ref',p_applicant_ref,
+      'token_hint',left(v_token,6)||'…'
+    )
+  );
+  return jsonb_build_object(
+    'activation_id',v_id,'token',v_token,
+    'token_hint',left(v_token,6)||'…','shown_once',true
+  );
 end;
 $$;
 create or replace function public.rpc_manasakna_activation_revoke_v1(p_activation_id uuid)
@@ -869,15 +1005,49 @@ set search_path = pg_catalog, manasakna
 as $$
 declare
   v_row manasakna.activation_tokens%rowtype;
+  v_group_id uuid;
 begin
-  select * into v_row from manasakna.activation_tokens
-  where token_hash=encode(digest(p_token,'sha256'),'hex') and status='active'
+  select * into v_row
+  from manasakna.activation_tokens
+  where token_hash=encode(digest(p_token,'sha256'),'hex')
+    and status='active'
     and (expires_at is null or expires_at > now())
   for update;
-  if not found then return jsonb_build_object('success',false,'code','INVALID_OR_EXPIRED'); end if;
-  update manasakna.activation_tokens set status='consumed',consumed_at=now() where id=v_row.id;
-  perform manasakna.audit_v1('activation_consume','activation_token',v_row.id::text);
-  return jsonb_build_object('success',true,'campaign_id',v_row.campaign_id,'applicant_ref',v_row.applicant_ref);
+  if not found then
+    return jsonb_build_object('success',false,'code','INVALID_OR_EXPIRED');
+  end if;
+  select gm.group_id into v_group_id
+  from manasakna.group_members gm
+  join manasakna.campaign_groups g on g.id=gm.group_id
+  join manasakna.campaigns c on c.id=g.campaign_id
+  join manasakna.lottery_entries e on e.id=gm.lottery_entry_id
+  join manasakna.lottery_rounds lrnd on lrnd.id=e.round_id and lrnd.season_id=c.season_id
+  join manasakna.lottery_results lres on lres.round_id=lrnd.id and lres.entry_id=e.id
+  where g.campaign_id=v_row.campaign_id
+    and gm.applicant_ref=v_row.applicant_ref
+    and gm.status in ('assigned','activated')
+    and g.status in ('draft','active') and c.status in ('draft','active')
+    and lres.outcome='selected'
+  limit 1;
+  if v_group_id is null then
+    return jsonb_build_object('success',false,'code','NOT_CURRENTLY_ELIGIBLE');
+  end if;
+  update manasakna.activation_tokens
+  set status='consumed',consumed_at=now()
+  where id=v_row.id;
+  update manasakna.group_members
+  set status='activated'
+  where group_id=v_group_id and applicant_ref=v_row.applicant_ref and status='assigned';
+  perform manasakna.audit_v1(
+    'activation_consume','activation_token',v_row.id::text,null,
+    jsonb_build_object('group_id',v_group_id,'applicant_ref',v_row.applicant_ref)
+  );
+  return jsonb_build_object(
+    'success',true,
+    'campaign_id',v_row.campaign_id,
+    'group_id',v_group_id,
+    'applicant_ref',v_row.applicant_ref
+  );
 end;
 $$;
 create or replace function public.rpc_manasakna_admin_role_set_v1(
@@ -925,25 +1095,36 @@ set search_path = pg_catalog, manasakna
 as $$
 declare
   v_id uuid := nullif(p_payload->>'id','')::uuid;
+  v_season_id uuid := nullif(p_payload->>'season_id','')::uuid;
   v_row manasakna.content_items%rowtype;
 begin
   perform manasakna.require_permission_v1('manage_content');
+  if v_season_id is null and nullif(p_payload->>'season_code','') is not null then
+    select id into v_season_id from manasakna.seasons
+    where season_code=p_payload->>'season_code';
+    if v_season_id is null then raise exception 'MANASAKNA_SEASON_NOT_FOUND'; end if;
+  end if;
   if v_id is null then
     insert into manasakna.content_items(
       season_id,content_type,slug,title_ar,body_ar,metadata,status,published_at,created_by,updated_by
     ) values (
-      nullif(p_payload->>'season_id','')::uuid,p_payload->>'content_type',p_payload->>'slug',p_payload->>'title_ar',
-      p_payload->>'body_ar',coalesce(p_payload->'metadata','{}'::jsonb),coalesce(nullif(p_payload->>'status',''),'draft'),
-      case when p_payload->>'status'='published' then now() else null end,auth.uid(),auth.uid()
+      v_season_id,p_payload->>'content_type',p_payload->>'slug',p_payload->>'title_ar',
+      p_payload->>'body_ar',coalesce(p_payload->'metadata','{}'::jsonb),
+      coalesce(nullif(p_payload->>'status',''),'draft'),
+      case when p_payload->>'status'='published' then now() else null end,
+      auth.uid(),auth.uid()
     ) returning * into v_row;
   else
     update manasakna.content_items c set
-      season_id=case when p_payload ? 'season_id' then nullif(p_payload->>'season_id','')::uuid else c.season_id end,
+      season_id=case when p_payload ? 'season_id' or p_payload ? 'season_code' then v_season_id else c.season_id end,
       content_type=coalesce(nullif(p_payload->>'content_type',''),c.content_type),
-      slug=coalesce(nullif(p_payload->>'slug',''),c.slug),title_ar=coalesce(nullif(p_payload->>'title_ar',''),c.title_ar),
+      slug=coalesce(nullif(p_payload->>'slug',''),c.slug),
+      title_ar=coalesce(nullif(p_payload->>'title_ar',''),c.title_ar),
       body_ar=case when p_payload ? 'body_ar' then p_payload->>'body_ar' else c.body_ar end,
-      metadata=coalesce(p_payload->'metadata',c.metadata),status=coalesce(nullif(p_payload->>'status',''),c.status),
-      published_at=case when coalesce(nullif(p_payload->>'status',''),c.status)='published' then coalesce(c.published_at,now()) else null end,
+      metadata=coalesce(p_payload->'metadata',c.metadata),
+      status=coalesce(nullif(p_payload->>'status',''),c.status),
+      published_at=case when coalesce(nullif(p_payload->>'status',''),c.status)='published'
+        then coalesce(c.published_at,now()) else null end,
       updated_by=auth.uid()
     where c.id=v_id returning * into v_row;
   end if;
@@ -970,27 +1151,37 @@ set search_path = pg_catalog, manasakna
 as $$
 declare
   v_id uuid := nullif(p_payload->>'id','')::uuid;
+  v_season_id uuid := nullif(p_payload->>'season_id','')::uuid;
   v_row manasakna.notifications%rowtype;
 begin
   perform manasakna.require_permission_v1('manage_notifications');
+  if v_season_id is null and nullif(p_payload->>'season_code','') is not null then
+    select id into v_season_id from manasakna.seasons
+    where season_code=p_payload->>'season_code';
+    if v_season_id is null then raise exception 'MANASAKNA_SEASON_NOT_FOUND'; end if;
+  end if;
   if v_id is null then
     insert into manasakna.notifications(
       season_id,title_ar,body_ar,audience,status,scheduled_for,published_at,created_by,updated_by
     ) values (
-      nullif(p_payload->>'season_id','')::uuid,p_payload->>'title_ar',p_payload->>'body_ar',
-      coalesce(p_payload->'audience','{"kind":"all"}'::jsonb),coalesce(nullif(p_payload->>'status',''),'draft'),
+      v_season_id,p_payload->>'title_ar',p_payload->>'body_ar',
+      coalesce(p_payload->'audience','{"kind":"all"}'::jsonb),
+      coalesce(nullif(p_payload->>'status',''),'draft'),
       nullif(p_payload->>'scheduled_for','')::timestamptz,
-      case when p_payload->>'status'='published' then now() else null end,auth.uid(),auth.uid()
+      case when p_payload->>'status'='published' then now() else null end,
+      auth.uid(),auth.uid()
     ) returning * into v_row;
   else
     update manasakna.notifications n set
-      season_id=case when p_payload ? 'season_id' then nullif(p_payload->>'season_id','')::uuid else n.season_id end,
+      season_id=case when p_payload ? 'season_id' or p_payload ? 'season_code' then v_season_id else n.season_id end,
       title_ar=coalesce(nullif(p_payload->>'title_ar',''),n.title_ar),
       body_ar=coalesce(nullif(p_payload->>'body_ar',''),n.body_ar),
       audience=coalesce(p_payload->'audience',n.audience),
       status=coalesce(nullif(p_payload->>'status',''),n.status),
-      scheduled_for=case when p_payload ? 'scheduled_for' then nullif(p_payload->>'scheduled_for','')::timestamptz else n.scheduled_for end,
-      published_at=case when coalesce(nullif(p_payload->>'status',''),n.status)='published' then coalesce(n.published_at,now()) else n.published_at end,
+      scheduled_for=case when p_payload ? 'scheduled_for'
+        then nullif(p_payload->>'scheduled_for','')::timestamptz else n.scheduled_for end,
+      published_at=case when coalesce(nullif(p_payload->>'status',''),n.status)='published'
+        then coalesce(n.published_at,now()) else n.published_at end,
       updated_by=auth.uid()
     where n.id=v_id returning * into v_row;
   end if;
@@ -1009,6 +1200,170 @@ begin
   return query select * from manasakna.audit_events order by created_at desc limit greatest(1,least(coalesce(p_limit,100),500));
 end;
 $$;
+create or replace function public.rpc_manasakna_synthetic_e2e_v1()
+returns jsonb
+language plpgsql security definer
+set search_path = pg_catalog, manasakna, public
+as $$
+declare
+  v_fixture jsonb;
+  v_season_id uuid;
+  v_round_id uuid;
+  v_selected_entry uuid;
+  v_selected_ref text;
+  v_waitlisted_entry uuid;
+  v_waitlisted_ref text;
+  v_ineligible_ref text;
+  v_campaign_id uuid;
+  v_group_id uuid;
+  v_member_id uuid;
+  v_a1 jsonb;
+  v_a2 jsonb;
+  v_a3 jsonb;
+  v_activate jsonb;
+  v_replay jsonb;
+  v_selected_count integer;
+  v_waitlisted_count integer;
+  v_ineligible_count integer;
+  v_revoked_count integer;
+  v_consumed_count integer;
+  v_active_count integer;
+  v_member_status text;
+  v_waitlisted_assign_rejected boolean := false;
+  v_waitlisted_activation_rejected boolean := false;
+  v_ineligible_activation_rejected boolean := false;
+  v_suffix text := to_char(clock_timestamp(),'YYYYMMDDHH24MISSMS');
+  v_pass boolean;
+begin
+  perform manasakna.require_permission_v1('manage_lottery');
+  perform manasakna.require_permission_v1('manage_eligibility');
+  perform manasakna.require_permission_v1('manage_campaigns');
+  perform manasakna.require_permission_v1('manage_activation');
+  v_fixture := public.rpc_manasakna_seed_synthetic_lottery_fixture_v1();
+  v_season_id := (v_fixture->>'season_id')::uuid;
+  v_round_id := (v_fixture->>'round_id')::uuid;
+
+  select r.entry_id,e.applicant_ref
+  into v_selected_entry,v_selected_ref
+  from manasakna.lottery_results r
+  join manasakna.lottery_entries e on e.id=r.entry_id
+  where r.round_id=v_round_id and r.outcome='selected'
+  order by r.rank_no limit 1;
+
+  select r.entry_id,e.applicant_ref
+  into v_waitlisted_entry,v_waitlisted_ref
+  from manasakna.lottery_results r
+  join manasakna.lottery_entries e on e.id=r.entry_id
+  where r.round_id=v_round_id and r.outcome='waitlisted'
+  order by r.rank_no limit 1;
+
+  select e.applicant_ref
+  into v_ineligible_ref
+  from manasakna.lottery_results r
+  join manasakna.lottery_entries e on e.id=r.entry_id
+  where r.round_id=v_round_id and r.outcome='ineligible'
+  order by e.applicant_ref limit 1;
+
+  if v_selected_entry is null or v_waitlisted_entry is null or v_ineligible_ref is null then
+    raise exception 'MANASAKNA_SYNTHETIC_E2E_FIXTURE_INCOMPLETE';
+  end if;
+
+  select id into v_campaign_id
+  from public.rpc_manasakna_campaign_upsert_v1(jsonb_build_object(
+    'season_id',v_season_id::text,'campaign_code','SYNTH-CAMP-'||v_suffix,
+    'title_ar','حملة اصطناعية E2E','status','active'
+  ));
+  select id into v_group_id
+  from public.rpc_manasakna_group_upsert_v1(jsonb_build_object(
+    'campaign_id',v_campaign_id::text,'group_code','SYNTH-GROUP-01',
+    'title_ar','مجموعة اصطناعية E2E','capacity',10,'status','active'
+  ));
+
+  select id into v_member_id
+  from public.rpc_manasakna_group_member_assign_v1(v_group_id,v_selected_entry);
+
+  begin
+    perform public.rpc_manasakna_group_member_assign_v1(v_group_id,v_waitlisted_entry);
+    v_waitlisted_assign_rejected := false;
+  exception when others then
+    v_waitlisted_assign_rejected := position('MANASAKNA_ONLY_SELECTED_PILGRIM_ASSIGNABLE' in sqlerrm) > 0;
+  end;
+
+  v_a1 := public.rpc_manasakna_issue_activation_v1(v_campaign_id,v_selected_ref,null);
+  perform public.rpc_manasakna_activation_revoke_v1((v_a1->>'activation_id')::uuid);
+  v_a2 := public.rpc_manasakna_issue_activation_v1(v_campaign_id,v_selected_ref,null);
+  perform public.rpc_manasakna_activation_revoke_v1((v_a2->>'activation_id')::uuid);
+  v_a3 := public.rpc_manasakna_issue_activation_v1(v_campaign_id,v_selected_ref,null);
+  v_activate := public.rpc_manasakna_activate_v1(v_a3->>'token');
+  v_replay := public.rpc_manasakna_activate_v1(v_a3->>'token');
+
+  begin
+    perform public.rpc_manasakna_issue_activation_v1(v_campaign_id,v_waitlisted_ref,null);
+    v_waitlisted_activation_rejected := false;
+  exception when others then
+    v_waitlisted_activation_rejected :=
+      position('MANASAKNA_ACTIVATION_REQUIRES_SELECTED_ASSIGNED_PILGRIM' in sqlerrm) > 0;
+  end;
+  begin
+    perform public.rpc_manasakna_issue_activation_v1(v_campaign_id,v_ineligible_ref,null);
+    v_ineligible_activation_rejected := false;
+  exception when others then
+    v_ineligible_activation_rejected :=
+      position('MANASAKNA_ACTIVATION_REQUIRES_SELECTED_ASSIGNED_PILGRIM' in sqlerrm) > 0;
+  end;
+
+  select count(*) filter (where outcome='selected'),
+         count(*) filter (where outcome='waitlisted'),
+         count(*) filter (where outcome='ineligible')
+  into v_selected_count,v_waitlisted_count,v_ineligible_count
+  from manasakna.lottery_results where round_id=v_round_id;
+
+  select count(*) filter (where status='revoked'),
+         count(*) filter (where status='consumed'),
+         count(*) filter (where status='active')
+  into v_revoked_count,v_consumed_count,v_active_count
+  from manasakna.activation_tokens
+  where campaign_id=v_campaign_id and applicant_ref=v_selected_ref;
+
+  select status into v_member_status
+  from manasakna.group_members where id=v_member_id;
+
+  v_pass := v_selected_count=5 and v_waitlisted_count=3 and v_ineligible_count=4
+    and v_waitlisted_assign_rejected
+    and v_waitlisted_activation_rejected
+    and v_ineligible_activation_rejected
+    and coalesce((v_activate->>'success')::boolean,false)
+    and not coalesce((v_replay->>'success')::boolean,true)
+    and v_revoked_count=2 and v_consumed_count=1 and v_active_count=0
+    and v_member_status='activated';
+  perform manasakna.audit_v1(
+    'synthetic_e2e','synthetic_e2e',v_round_id::text,null,
+    jsonb_build_object('pass',v_pass,'campaign_id',v_campaign_id,'group_id',v_group_id)
+  );
+
+  return jsonb_build_object(
+    'pass',v_pass,
+    'season_id',v_season_id,
+    'round_id',v_round_id,
+    'campaign_id',v_campaign_id,
+    'group_id',v_group_id,
+    'selected',v_selected_count,
+    'waitlisted',v_waitlisted_count,
+    'ineligible',v_ineligible_count,
+    'waitlisted_assignment_rejected',v_waitlisted_assign_rejected,
+    'waitlisted_activation_rejected',v_waitlisted_activation_rejected,
+    'ineligible_activation_rejected',v_ineligible_activation_rejected,
+    'selected_activation_success',coalesce((v_activate->>'success')::boolean,false),
+    'activation_replay_rejected',not coalesce((v_replay->>'success')::boolean,true),
+    'activation_history_revoked',v_revoked_count,
+    'activation_history_consumed',v_consumed_count,
+    'activation_history_active',v_active_count,
+    'member_status',v_member_status,
+    'real_data',false
+  );
+end;
+$$;
+
 -- V1 hard stop: no real pilgrim/lottery identities are accepted by this migration.
 alter table manasakna.lottery_entries
   drop constraint if exists manasakna_lottery_entries_synthetic_only_v1;
