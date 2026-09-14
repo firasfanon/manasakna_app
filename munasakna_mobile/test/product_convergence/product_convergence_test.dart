@@ -25,7 +25,8 @@ void main() {
         ),
       ],
     );
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(
+        ProviderScope(child: MaterialApp.router(routerConfig: router)));
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.notifications_rounded), findsOneWidget);
@@ -44,7 +45,8 @@ void main() {
       ],
       initialLocation: MunasaknaRoutes.services,
     );
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(
+        ProviderScope(child: MaterialApp.router(routerConfig: router)));
     await tester.pumpAndSettle();
 
     // ListView children outside the current viewport may not be built yet.
@@ -272,16 +274,18 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp.router(
-        builder: (context, child) {
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: const TextScaler.linear(2),
-            ),
-            child: child!,
-          );
-        },
-        routerConfig: servicesRouter,
+      ProviderScope(
+        child: MaterialApp.router(
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(2),
+              ),
+              child: child!,
+            );
+          },
+          routerConfig: servicesRouter,
+        ),
       ),
     );
     await tester.pumpAndSettle();
