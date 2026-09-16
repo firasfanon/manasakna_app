@@ -11,7 +11,7 @@ Future<void> main() async {
   if (AdminEnvironment.isConfigured) {
     await Supabase.initialize(
       url: AdminEnvironment.supabaseUrl,
-      publishableKey: AdminEnvironment.supabaseAnonKey,
+      publishableKey: AdminEnvironment.clientKey,
     );
   }
   runApp(const ManasaknaAdminApp());
@@ -51,7 +51,12 @@ class _AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = client.auth.currentSession;
         if (session == null) return const LoginPage();
-        return _AdminAuthorizationGate(repository: AdminRepository(client));
+        return _AdminAuthorizationGate(
+          repository: AdminRepository(
+            client,
+            syntheticToolsEnabled: AdminEnvironment.syntheticToolsEnabled,
+          ),
+        );
       },
     );
   }
@@ -160,7 +165,7 @@ class _ConfigurationRequiredPage extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(32),
           child: Text(
-            'لوحة مناسكنا تعمل Fail-Closed. شغّلها فقط مع SUPABASE_URL وSUPABASE_ANON_KEY عبر --dart-define.\nلا توجد بيانات حقيقية أو Production في V1.',
+            'لوحة مناسكنا تعمل Fail-Closed. شغّلها فقط مع SUPABASE_URL وSUPABASE_PUBLISHABLE_KEY (أو SUPABASE_ANON_KEY مؤقتًا) عبر --dart-define.\nلا توجد بيانات حقيقية أو Production في V1.',
             textAlign: TextAlign.center,
           ),
         ),

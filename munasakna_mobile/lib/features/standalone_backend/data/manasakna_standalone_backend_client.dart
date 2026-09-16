@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
@@ -23,12 +23,29 @@ class ManasaknaStandaloneBackendConfig {
   final String publishableKey;
 
   bool get isConfigured =>
-      baseUrl.trim().isNotEmpty && publishableKey.trim().isNotEmpty;
+      baseUrl.trim().isNotEmpty && _isSafeClientApiKey(publishableKey);
 
   Uri rpcUri(String functionName) {
     final normalized = baseUrl.trim().replaceFirst(RegExp(r'/$'), '');
     return Uri.parse('$normalized/rest/v1/rpc/$functionName');
   }
+}
+
+bool _isSafeClientApiKey(String rawKey) {
+  final key = rawKey.trim();
+  if (key.isEmpty || key.startsWith('sb_secret_')) return false;
+  if (key.startsWith('sb_publishable_')) return true;
+  if (key.toLowerCase().contains('service_role')) return false;
+  final parts = key.split('.');
+  if (parts.length == 3) {
+    try {
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      if (payload is Map && payload['role'] == 'service_role') return false;
+    } catch (_) {}
+  }
+  return true;
 }
 
 class ManasaknaBackendException implements Exception {

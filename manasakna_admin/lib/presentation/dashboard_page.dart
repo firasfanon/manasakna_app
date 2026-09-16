@@ -94,6 +94,7 @@ class _DashboardPageState extends State<DashboardPage> {
           const Divider(),
           for (var i = 0; i < _items.length; i++)
             ListTile(
+              key: ValueKey('admin-nav-$i'),
               selected: i == _selected,
               leading: Icon(_items[i].icon),
               title: Text(_items[i].label),
@@ -126,8 +127,12 @@ class _DashboardPageState extends State<DashboardPage> {
         key: ValueKey('seasons-$_refreshEpoch'),
         title: 'المواسم',
         future: widget.repository.seasons(),
-        actionLabel: 'تهيئة موسم 1448',
-        onAction: _seedSeason1448,
+        actionLabel: widget.repository.syntheticToolsEnabled
+            ? 'تهيئة موسم 1448'
+            : null,
+        onAction: widget.repository.syntheticToolsEnabled
+            ? _seedSeason1448
+            : null,
       ),
       2 => _LotterySection(
         key: ValueKey('lottery-$_refreshEpoch'),
@@ -143,15 +148,21 @@ class _DashboardPageState extends State<DashboardPage> {
         key: ValueKey('content-$_refreshEpoch'),
         title: 'المحتوى والفتاوى',
         future: widget.repository.content(),
-        actionLabel: 'إضافة محتوى تجريبي',
-        onAction: _seedContent,
+        actionLabel: widget.repository.syntheticToolsEnabled
+            ? 'إضافة محتوى تجريبي'
+            : null,
+        onAction: widget.repository.syntheticToolsEnabled ? _seedContent : null,
       ),
       5 => _ListSection(
         key: ValueKey('notifications-$_refreshEpoch'),
         title: 'الإشعارات',
         future: widget.repository.notifications(),
-        actionLabel: 'إضافة إشعار تجريبي',
-        onAction: _seedNotification,
+        actionLabel: widget.repository.syntheticToolsEnabled
+            ? 'إضافة إشعار تجريبي'
+            : null,
+        onAction: widget.repository.syntheticToolsEnabled
+            ? _seedNotification
+            : null,
       ),
       _ => _ListSection(
         key: ValueKey('audit-$_refreshEpoch'),
@@ -355,21 +366,37 @@ class _LotterySectionState extends State<_LotterySection> {
       title: 'القرعة والأهلية',
       subtitle:
           'V1 يمنع البيانات الحقيقية ويستخدم Fixture اصطناعيًا من 12 حالة.',
-      actions: [
-        FilledButton.icon(
-          onPressed: _busy ? null : _seedFixture,
-          icon: const Icon(Icons.science_outlined),
-          label: Text(_busy ? 'جارٍ التنفيذ…' : 'إنشاء وتشغيل عينة 12 حالة'),
-        ),
-        OutlinedButton.icon(
-          onPressed: _busy ? null : _runSyntheticE2E,
-          icon: const Icon(Icons.verified_outlined),
-          label: const Text('E2E: القرعة ← المجموعة ← التفعيل'),
-        ),
-      ],
+      actions: widget.repository.syntheticToolsEnabled
+          ? [
+              FilledButton.icon(
+                onPressed: _busy ? null : _seedFixture,
+                icon: const Icon(Icons.science_outlined),
+                label: Text(
+                  _busy ? 'جارٍ التنفيذ…' : 'إنشاء وتشغيل عينة 12 حالة',
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _runSyntheticE2E,
+                icon: const Icon(Icons.verified_outlined),
+                label: const Text('E2E: القرعة ← المجموعة ← التفعيل'),
+              ),
+            ]
+          : const [],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!widget.repository.syntheticToolsEnabled) ...[
+            const Card(
+              key: ValueKey('synthetic-tools-disabled'),
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Synthetic test tools are disabled. Enable MANASAKNA_ENABLE_SYNTHETIC_TOOLS only for controlled UAT.',
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           if (_message != null) ...[
             Card(
               child: Padding(
