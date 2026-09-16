@@ -153,6 +153,35 @@ void main() {
       ),
     );
   });
+
+  test('session expiry rejection uses canonical session RPC', () async {
+    String? calledPath;
+    final client = HttpManasaknaStandaloneBackendClient(
+      config: config,
+      httpClient: MockClient((request) async {
+        calledPath = request.url.path;
+        return http.Response(
+          jsonEncode(<String, dynamic>{
+            'success': false,
+            'code': 'SESSION_EXPIRED',
+          }),
+          200,
+          headers: const {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+
+    await expectLater(
+      client.revalidate('expired-session-token'),
+      throwsA(
+        isA<ManasaknaBackendException>()
+            .having((e) => e.code, 'code', 'SESSION_EXPIRED')
+            .having((e) => e.authoritative, 'authoritative', isTrue),
+      ),
+    );
+    expect(calledPath, contains('rpc_manasakna_pilgrim_session_context_v1'));
+    expect(calledPath, isNot(contains('rpc_manasakna_activate_v1')));
+  });
 }
 
 Map<String, dynamic> _activationPayload() {

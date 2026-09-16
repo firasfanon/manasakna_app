@@ -27,4 +27,32 @@ void main() {
     );
     expect(rpcCalls, 1);
   });
+
+  test('server expiry bound denial is surfaced fail-closed', () async {
+    final fixedNow = DateTime.utc(2026, 9, 16, 10);
+    var rpcCalls = 0;
+    final repository = AdminRepository.withRpcInvoker((
+      functionName, {
+      params,
+    }) async {
+      rpcCalls++;
+      throw StateError('MANASAKNA_ACTIVATION_EXPIRY_TOO_FAR');
+    }, now: () => fixedNow);
+
+    await expectLater(
+      repository.issueActivation(
+        campaignId: 'campaign-1',
+        applicantRef: 'SYNTH-01',
+        expiresAt: fixedNow.add(const Duration(days: 8)),
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'MANASAKNA_ACTIVATION_EXPIRY_TOO_FAR',
+        ),
+      ),
+    );
+    expect(rpcCalls, 1);
+  });
 }

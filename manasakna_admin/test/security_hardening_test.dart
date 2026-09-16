@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manasakna_admin/config/admin_environment.dart';
@@ -68,6 +70,24 @@ void main() {
     expect(rpcCalled, isFalse);
   });
 
+  test('migration 005 locks credential lifecycle and synthetic boundary', () {
+    final sql = _securityClosureMigration().readAsStringSync();
+    expect(sql, contains("alter column expires_at set not null"));
+    expect(sql, contains("interval '7 days'"));
+    expect(sql, contains('MANASAKNA_ACTIVATION_EXPIRY_NOT_FUTURE'));
+    expect(sql, contains('MANASAKNA_ACTIVATION_EXPIRY_TOO_FAR'));
+    expect(sql, contains('MANASAKNA_V1_SYNTHETIC_ONLY'));
+    expect(sql, contains('manasakna_lottery_entries_synthetic_only_ck'));
+    expect(sql, contains('manasakna_group_members_synthetic_only_ck'));
+    expect(sql, contains('manasakna_activation_tokens_synthetic_only_ck'));
+    expect(sql, contains('manasakna_pilgrim_sessions_max_90d_ck'));
+    expect(
+      sql,
+      contains('revoke all on function public.rpc_manasakna_activate_v1(text)'),
+    );
+    expect(sql, contains('manasakna.expire_credentials_v1()'));
+    expect(sql, contains('cron.schedule'));
+  });
   test('synthetic fixture RPCs fail closed when tooling is disabled', () async {
     var rpcCalled = false;
     final repository = AdminRepository.withRpcInvoker((
@@ -117,4 +137,13 @@ void main() {
     expect(find.text('إنشاء وتشغيل عينة 12 حالة'), findsNothing);
     expect(find.text('E2E: القرعة ← المجموعة ← التفعيل'), findsNothing);
   });
+}
+
+File _securityClosureMigration() {
+  const relative = 'supabase/migrations/005_manasakna_security_closure_v1.sql';
+  for (final candidate in <String>[relative, '../$relative']) {
+    final file = File(candidate);
+    if (file.existsSync()) return file;
+  }
+  throw StateError('Migration 005 not found from test working directory.');
 }
