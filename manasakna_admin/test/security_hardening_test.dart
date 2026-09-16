@@ -85,6 +85,29 @@ void main() {
       sql,
       contains('revoke all on function public.rpc_manasakna_activate_v1(text)'),
     );
+    for (final rpc in <String>[
+      'rpc_manasakna_seed_synthetic_lottery_fixture_v1()',
+      'rpc_manasakna_synthetic_e2e_v1()',
+      'rpc_manasakna_seed_pilgrim_backend_fixture_v1()',
+    ]) {
+      expect(sql, contains('revoke all on function public.$rpc'));
+      expect(
+        sql,
+        contains(
+          "has_function_privilege('authenticated', 'public.$rpc', 'EXECUTE')",
+        ),
+      );
+      expect(
+        sql,
+        isNot(
+          contains('grant execute on function public.$rpc to authenticated'),
+        ),
+      );
+    }
+    expect(
+      sql,
+      contains('MANASAKNA_H3_SYNTHETIC_RPC_EXTERNAL_EXECUTE_REMAINS'),
+    );
     expect(sql, contains('manasakna.expire_credentials_v1()'));
     expect(sql, contains('cron.schedule'));
   });

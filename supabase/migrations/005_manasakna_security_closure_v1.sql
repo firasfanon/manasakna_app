@@ -147,6 +147,33 @@ $$;
 revoke all on function public.rpc_manasakna_activate_v1(text)
   from public, anon, authenticated, service_role;
 
+-- H3.1: synthetic fixture/test entrypoints are owner-only. They remain in source
+-- for controlled database-owner test execution, but are not exposed through
+-- PostgREST/Data API roles in hardened environments.
+revoke all on function public.rpc_manasakna_seed_synthetic_lottery_fixture_v1()
+  from public, anon, authenticated, service_role;
+revoke all on function public.rpc_manasakna_synthetic_e2e_v1()
+  from public, anon, authenticated, service_role;
+revoke all on function public.rpc_manasakna_seed_pilgrim_backend_fixture_v1()
+  from public, anon, authenticated, service_role;
+
+-- Fail the migration if any external API role still inherits EXECUTE.
+do $$
+begin
+  if has_function_privilege('anon', 'public.rpc_manasakna_seed_synthetic_lottery_fixture_v1()', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.rpc_manasakna_seed_synthetic_lottery_fixture_v1()', 'EXECUTE')
+     or has_function_privilege('service_role', 'public.rpc_manasakna_seed_synthetic_lottery_fixture_v1()', 'EXECUTE')
+     or has_function_privilege('anon', 'public.rpc_manasakna_synthetic_e2e_v1()', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.rpc_manasakna_synthetic_e2e_v1()', 'EXECUTE')
+     or has_function_privilege('service_role', 'public.rpc_manasakna_synthetic_e2e_v1()', 'EXECUTE')
+     or has_function_privilege('anon', 'public.rpc_manasakna_seed_pilgrim_backend_fixture_v1()', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.rpc_manasakna_seed_pilgrim_backend_fixture_v1()', 'EXECUTE')
+     or has_function_privilege('service_role', 'public.rpc_manasakna_seed_pilgrim_backend_fixture_v1()', 'EXECUTE') then
+    raise exception 'MANASAKNA_H3_SYNTHETIC_RPC_EXTERNAL_EXECUTE_REMAINS';
+  end if;
+end;
+$$;
+
 grant execute on function public.rpc_manasakna_issue_activation_v1(uuid,text,timestamptz)
   to authenticated;
 
@@ -212,6 +239,13 @@ comment on function manasakna.expire_credentials_v1() is
 
 comment on function public.rpc_manasakna_issue_activation_v1(uuid,text,timestamptz) is
   'H3 synthetic-only activation issuance with server-derived expiry and seven-day maximum lifetime.';
+
+comment on function public.rpc_manasakna_seed_synthetic_lottery_fixture_v1() is
+  'H3.1 owner-only synthetic lottery fixture. External API execution is revoked.';
+comment on function public.rpc_manasakna_synthetic_e2e_v1() is
+  'H3.1 owner-only synthetic E2E harness. External API execution is revoked.';
+comment on function public.rpc_manasakna_seed_pilgrim_backend_fixture_v1() is
+  'H3.1 owner-only synthetic pilgrim fixture. External API execution is revoked.';
 
 comment on constraint manasakna_activation_expiry_bounded_ck
   on manasakna.activation_tokens is
