@@ -92,6 +92,67 @@ void main() {
           .having((e) => e.authoritative, 'authoritative', isTrue)),
     );
   });
+  test('configuration rejects privileged client keys', () {
+    const publishable = ManasaknaStandaloneBackendConfig(
+      baseUrl: 'https://example.supabase.co',
+      publishableKey: 'sb_publishable_test',
+    );
+    const secret = ManasaknaStandaloneBackendConfig(
+      baseUrl: 'https://example.supabase.co',
+      publishableKey: 'sb_secret_test',
+    );
+    const legacyServiceRole = ManasaknaStandaloneBackendConfig(
+      baseUrl: 'https://example.supabase.co',
+      publishableKey:
+          'eyJhbGciOiJub25lIn0.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature',
+    );
+    expect(publishable.isConfigured, isTrue);
+    expect(secret.isConfigured, isFalse);
+    expect(legacyServiceRole.isConfigured, isFalse);
+  });
+
+  test('activation replay rejection is authoritative', () async {
+    final client = HttpManasaknaStandaloneBackendClient(
+      config: config,
+      httpClient: MockClient((request) async => http.Response(
+            jsonEncode(<String, dynamic>{
+              'success': false,
+              'code': 'INVALID_OR_EXPIRED',
+            }),
+            200,
+            headers: const {'content-type': 'application/json; charset=utf-8'},
+          )),
+    );
+
+    expect(
+      () => client.activate('already-consumed-token'),
+      throwsA(
+        isA<ManasaknaBackendException>()
+            .having((e) => e.code, 'code', 'INVALID_OR_EXPIRED')
+            .having((e) => e.authoritative, 'authoritative', isTrue),
+      ),
+    );
+  });
+
+  test('activation success without session expiry is rejected', () async {
+    final payload = _activationPayload()..remove('sessionExpiresAt');
+    final client = HttpManasaknaStandaloneBackendClient(
+      config: config,
+      httpClient: MockClient((request) async => http.Response(
+            jsonEncode(payload),
+            200,
+            headers: const {'content-type': 'application/json; charset=utf-8'},
+          )),
+    );
+
+    expect(
+      () => client.activate('opaque-token-value'),
+      throwsA(
+        isA<ManasaknaBackendException>()
+            .having((e) => e.code, 'code', 'session_expiry_missing'),
+      ),
+    );
+  });
 }
 
 Map<String, dynamic> _activationPayload() {
