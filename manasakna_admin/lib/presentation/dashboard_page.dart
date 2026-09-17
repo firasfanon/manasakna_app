@@ -635,6 +635,10 @@ class _LotteryRoundCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final roundId = '${round['id'] ?? ''}';
+    final totalEntries = round['total_entries'] ?? 0;
+    final selectedCount = round['selected_count'] ?? 0;
+    final waitlistedCount = round['waitlisted_count'] ?? 0;
+    final ineligibleCount = round['ineligible_count'] ?? 0;
     return Card(
       child: ExpansionTile(
         leading: const Icon(Icons.how_to_reg_outlined),
@@ -642,8 +646,8 @@ class _LotteryRoundCard extends StatelessWidget {
           '${round['title_ar'] ?? round['round_code'] ?? 'جولة قرعة'}',
         ),
         subtitle: Text(
-          'السعة: ${round['capacity'] ?? '—'} • '
-          '${AdminPresentation.statusAr(round['status'])}',
+          'الإجمالي $totalEntries • المختارون $selectedCount • '
+          'الانتظار $waitlistedCount • غير المؤهلين $ineligibleCount',
         ),
         trailing: _StatusChip(rawStatus: round['status']),
         children: [
@@ -654,7 +658,17 @@ class _LotteryRoundCard extends StatelessWidget {
               children: [
                 _InfoWrap(
                   items: [
-                    _InfoItem('رمز الجولة', round['round_code']),
+                    _InfoItem(
+                      'المرجع التقني',
+                      AdminPresentation.referenceForDisplay(
+                        round['round_code'],
+                      ),
+                    ),
+                    _InfoItem('السعة المعتمدة', round['capacity']),
+                    _InfoItem('إجمالي الحالات', totalEntries),
+                    _InfoItem('المختارون', selectedCount),
+                    _InfoItem('قائمة الانتظار', waitlistedCount),
+                    _InfoItem('غير المؤهلين', ineligibleCount),
                     _InfoItem('نسخة الخوارزمية', round['algorithm_version']),
                     _InfoItem(
                       'وقت التنفيذ',
@@ -748,7 +762,7 @@ class _CampaignCard extends StatelessWidget {
           '${campaign['title_ar'] ?? campaign['campaign_code'] ?? 'حملة'}',
         ),
         subtitle: Text(
-          '${campaign['campaign_code'] ?? '—'} • '
+          'المجموعات: ${campaign['group_count'] ?? 0} • '
           '${AdminPresentation.statusAr(campaign['status'])}',
         ),
         trailing: _StatusChip(rawStatus: campaign['status']),
@@ -760,6 +774,12 @@ class _CampaignCard extends StatelessWidget {
               children: [
                 _InfoWrap(
                   items: [
+                    _InfoItem(
+                      'المرجع التقني',
+                      AdminPresentation.referenceForDisplay(
+                        campaign['campaign_code'],
+                      ),
+                    ),
                     _InfoItem(
                       'بداية الحملة',
                       AdminPresentation.dateTimeAr(campaign['starts_at']),
@@ -1318,10 +1338,14 @@ class _ErrorView extends StatelessWidget {
 _RecordModel _seasonModel(Map<String, dynamic> row) {
   final year = row['hijri_year'];
   final gregorian = row['gregorian_year'];
+  final seasonCode = '${row['season_code'] ?? ''}'.trim();
   final bits = <String>[
-    if ('${row['season_code'] ?? ''}'.isNotEmpty) '${row['season_code']}',
+    AdminPresentation.syntheticSeasonLabel(row),
     if (year != null) '$year هـ',
     if (gregorian != null) '$gregorian م',
+    if (seasonCode.isNotEmpty &&
+        !AdminPresentation.isSyntheticReference(seasonCode))
+      seasonCode,
   ];
   return _RecordModel(
     row: row,
@@ -1331,6 +1355,10 @@ _RecordModel _seasonModel(Map<String, dynamic> row) {
     rawStatus: '${row['status'] ?? ''}',
     details: [
       _InfoItem('نوع البيانات', AdminPresentation.syntheticSeasonLabel(row)),
+      _InfoItem(
+        'المرجع التقني',
+        AdminPresentation.referenceForDisplay(row['season_code']),
+      ),
       _InfoItem(
         'فتح التسجيل',
         AdminPresentation.dateTimeAr(row['registration_opens_at']),
@@ -1354,15 +1382,17 @@ _RecordModel _seasonModel(Map<String, dynamic> row) {
 
 _RecordModel _contentModel(Map<String, dynamic> row) {
   final body = '${row['body_ar'] ?? ''}'.trim();
+  final semanticType = AdminPresentation.semanticContentTypeAr(row);
   return _RecordModel(
     row: row,
-    icon: _contentIcon('${row['content_type'] ?? ''}'),
+    icon: _contentIconForRow(row),
     title: '${row['title_ar'] ?? row['slug'] ?? 'محتوى'}',
-    subtitle: AdminPresentation.contentTypeAr(row['content_type']),
+    subtitle: semanticType,
     rawStatus: '${row['status'] ?? ''}',
     details: [
+      _InfoItem('التصنيف التشغيلي', semanticType),
       _InfoItem(
-        'نوع المحتوى',
+        'نوع السجل',
         AdminPresentation.contentTypeAr(row['content_type']),
       ),
       _InfoItem('جهة/مصدر الاعتماد', AdminPresentation.authorityLabel(row)),
@@ -1370,7 +1400,10 @@ _RecordModel _contentModel(Map<String, dynamic> row) {
         'تاريخ النشر',
         AdminPresentation.dateTimeAr(row['published_at']),
       ),
-      _InfoItem('المعرّف', row['slug'] ?? '—'),
+      _InfoItem(
+        'المرجع التقني',
+        AdminPresentation.referenceForDisplay(row['slug']),
+      ),
       _InfoItem('ملخص المحتوى', body.isEmpty ? 'لا يوجد نص' : body),
       _InfoItem('آخر تحديث', AdminPresentation.dateTimeAr(row['updated_at'])),
     ],
@@ -1428,7 +1461,14 @@ _RecordModel _auditModel(Map<String, dynamic> row) {
   );
 }
 
-IconData _contentIcon(String type) {
+IconData _contentIconForRow(Map<String, dynamic> row) {
+  final semantic = AdminPresentation.semanticContentTypeAr(row);
+  if (semantic == 'محتوى شرعي' || semantic == 'فتوى') {
+    return Icons.gavel_outlined;
+  }
+  if (semantic == 'تنبيهات وإشعارات') return Icons.notifications_outlined;
+  if (semantic == 'خدمة الرحلة') return Icons.route_outlined;
+  final type = '${row['content_type'] ?? ''}';
   return switch (type) {
     'fatwa' => Icons.gavel_outlined,
     'guidance' => Icons.menu_book_outlined,

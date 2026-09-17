@@ -58,14 +58,27 @@ class AdminPresentation {
     final value = '${raw ?? ''}'.trim();
     const labels = <String, String>{
       'season_upsert': 'إنشاء أو تحديث موسم',
+      'eligibility_rule_upsert': 'إنشاء أو تحديث قاعدة أهلية',
+      'lottery_round_upsert': 'إنشاء أو تحديث جولة قرعة',
+      'lottery_entry_upsert': 'إضافة أو تحديث طلب في القرعة',
+      'eligibility_check_set': 'تسجيل نتيجة تحقق أهلية',
       'lottery_execute': 'تنفيذ جولة قرعة',
+      'synthetic_fixture_create': 'إنشاء عينة اختبار للقرعة',
       'campaign_upsert': 'إنشاء أو تحديث حملة',
       'group_upsert': 'إنشاء أو تحديث مجموعة',
       'group_member_assign': 'تخصيص حاج لمجموعة',
+      'operational_pack_upsert': 'إنشاء أو تحديث حزمة تشغيل',
       'activation_issue': 'إصدار رمز تفعيل',
+      'activation_revoke': 'إلغاء رمز تفعيل',
+      'activation_consume': 'استهلاك رمز تفعيل',
+      'pilgrim_session_issue': 'إصدار جلسة حاج',
+      'pilgrim_session_activate': 'تفعيل جلسة حاج',
+      'pilgrim_session_revoke': 'إلغاء جلسة حاج',
+      'pilgrim_backend_fixture_create': 'إنشاء بيانات حاج تجريبية',
+      'admin_role_set': 'تحديث صلاحية إدارية',
       'content_upsert': 'إنشاء أو تحديث محتوى',
       'notification_upsert': 'إنشاء أو تحديث إشعار',
-      'pilgrim_session_issue': 'إصدار جلسة حاج',
+      'synthetic_e2e': 'تشغيل اختبار تكاملي تجريبي',
     };
     return labels[value] ?? _humanize(value);
   }
@@ -74,14 +87,20 @@ class AdminPresentation {
     final value = '${raw ?? ''}'.trim();
     const labels = <String, String>{
       'season': 'موسم',
+      'eligibility_rule': 'قاعدة أهلية',
+      'eligibility_check': 'تحقق أهلية',
+      'lottery_entry': 'طلب قرعة',
       'lottery_round': 'جولة قرعة',
       'campaign': 'حملة',
       'campaign_group': 'مجموعة',
       'group_member': 'عضو مجموعة',
+      'campaign_operational_pack': 'حزمة تشغيل',
       'activation_token': 'رمز تفعيل',
       'content_item': 'محتوى',
       'notification': 'إشعار',
       'pilgrim_session': 'جلسة حاج',
+      'admin_role_binding': 'صلاحية إدارية',
+      'synthetic_e2e': 'اختبار تكاملي تجريبي',
     };
     return labels[value] ?? _humanize(value);
   }
@@ -115,6 +134,35 @@ class AdminPresentation {
     if (value.isEmpty) return '—';
     if (value.length <= 12) return value;
     return '${value.substring(0, 8)}…${value.substring(value.length - 4)}';
+  }
+
+  static bool isSyntheticReference(Object? raw) {
+    final value = '${raw ?? ''}'.trim().toUpperCase();
+    return value.startsWith('SYNTH-') ||
+        value.contains('SYNTHETIC') ||
+        value.startsWith('TEST-');
+  }
+
+  static String referenceForDisplay(Object? raw) {
+    final value = '${raw ?? ''}'.trim();
+    if (value.isEmpty) return '—';
+    if (isSyntheticReference(value)) return 'مرجع تجريبي ${shortId(value)}';
+    return shortId(value);
+  }
+
+  static String semanticContentTypeAr(Map<String, dynamic> row) {
+    final rawType = '${row['content_type'] ?? ''}'.trim();
+    final text = '${row['title_ar'] ?? ''} ${row['body_ar'] ?? ''}'.trim();
+    if (rawType == 'fatwa') return 'فتوى';
+    if (rawType == 'guidance') return 'إرشاد';
+    if (rawType == 'service') {
+      if (text.contains('شرعي') || text.contains('فتوى')) return 'محتوى شرعي';
+      if (text.contains('إشعار') || text.contains('تنبيه')) {
+        return 'تنبيهات وإشعارات';
+      }
+      if (text.contains('رحلتي') || text.contains('رحلة')) return 'خدمة الرحلة';
+    }
+    return contentTypeAr(rawType);
   }
 
   static String boolAr(Object? raw) => raw == true ? 'نعم' : 'لا';
