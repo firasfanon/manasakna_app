@@ -10,7 +10,7 @@ class Manasikuna1448LocalStore {
   const Manasikuna1448LocalStore();
 
   static const String snapshotKey = 'manasikuna_1448_launch_snapshot_v1';
-  static const int snapshotSchemaVersion = 2;
+  static const int snapshotSchemaVersion = 3;
   static const int supportedPackSchemaVersion = 1;
 
   Future<void> save(Manasikuna1448LaunchSession session) async {
@@ -131,6 +131,7 @@ class Manasikuna1448LocalStore {
       'credentialExpiresAtUtc':
           session.credentialExpiresAtUtc.toUtc().toIso8601String(),
       'savedAtUtc': session.savedAtUtc.toUtc().toIso8601String(),
+      'sessionToken': session.sessionToken,
       'profile': _profileToJson(session.profile),
       'pack': _packToJson(session.pack),
     };
@@ -163,6 +164,8 @@ class Manasikuna1448LocalStore {
     final activatedAtUtc = _date(json['activatedAtUtc']);
     final credentialExpiresAtUtc = _date(json['credentialExpiresAtUtc']);
     final savedAtUtc = _date(json['savedAtUtc']);
+    final sessionToken = json['sessionToken'];
+    if (sessionToken != null && sessionToken is! String) return null;
 
     if (activatedAtUtc == null ||
         credentialExpiresAtUtc == null ||
@@ -176,6 +179,7 @@ class Manasikuna1448LocalStore {
       activatedAtUtc: activatedAtUtc,
       credentialExpiresAtUtc: credentialExpiresAtUtc,
       savedAtUtc: savedAtUtc,
+      sessionToken: sessionToken as String?,
     );
   }
 

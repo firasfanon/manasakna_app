@@ -1,26 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/munasakna_routes.dart';
 import '../../../../app/theme/munasakna_theme.dart';
 import '../../../../core/widgets/munasakna_bottom_nav.dart';
+import '../../../standalone_backend/application/manasakna_standalone_backend_providers.dart';
 
-class ServicesPage extends StatefulWidget {
+class ServicesPage extends ConsumerStatefulWidget {
   const ServicesPage({super.key});
 
   @override
-  State<ServicesPage> createState() => _ServicesPageState();
+  ConsumerState<ServicesPage> createState() => _ServicesPageState();
 }
 
-class _ServicesPageState extends State<ServicesPage> {
+class _ServicesPageState extends ConsumerState<ServicesPage> {
   String _query = '';
 
   @override
   Widget build(BuildContext context) {
     final query = _query.trim().toLowerCase();
+    final published =
+        ref.watch(manasaknaServiceContentProvider).asData?.value ?? const [];
+    final remoteServices = <_VisualService>[];
+    for (final item in published) {
+      if (item.metadata['enabled'] == false) continue;
+      final route = item.metadata['route'] as String?;
+      if (route == null) continue;
+      final matches =
+          _visualServices.where((candidate) => candidate.route == route);
+      if (matches.isEmpty) continue;
+      final base = matches.first;
+      remoteServices.add(_VisualService(
+        item.titleAr,
+        item.bodyAr.isEmpty ? base.subtitle : item.bodyAr,
+        base.icon,
+        route,
+        gold: item.metadata['gold'] == true,
+      ));
+    }
+    final remoteRoutes = remoteServices.map((item) => item.route).toSet();
+    final allServices = <_VisualService>[
+      ...remoteServices,
+      ..._visualServices.where((item) => !remoteRoutes.contains(item.route)),
+    ];
     final visibleServices = query.isEmpty
-        ? _visualServices
-        : _visualServices
+        ? allServices
+        : allServices
             .where((service) =>
                 service.title.toLowerCase().contains(query) ||
                 service.subtitle.toLowerCase().contains(query))

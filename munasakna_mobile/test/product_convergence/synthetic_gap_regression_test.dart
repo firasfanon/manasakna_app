@@ -99,6 +99,7 @@ void main() {
       path: MunasaknaRoutes.services,
       page: const ServicesPage(),
       textScale: 2,
+      provider: true,
     );
 
     expect(find.text('الخدمات'), findsOneWidget);

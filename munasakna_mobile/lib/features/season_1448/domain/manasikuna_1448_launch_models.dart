@@ -7,6 +7,7 @@ class Manasikuna1448LaunchSession {
     required this.activatedAtUtc,
     required this.credentialExpiresAtUtc,
     required this.savedAtUtc,
+    this.sessionToken,
   });
 
   final OfficialPilgrimSeed profile;
@@ -14,6 +15,7 @@ class Manasikuna1448LaunchSession {
   final DateTime activatedAtUtc;
   final DateTime credentialExpiresAtUtc;
   final DateTime savedAtUtc;
+  final String? sessionToken;
 
   bool isCredentialValidAt(DateTime moment) {
     final utc = moment.toUtc();

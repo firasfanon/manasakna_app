@@ -8,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../app/router/munasakna_routes.dart';
 import '../../../../app/theme/munasakna_theme.dart';
 import '../../../../core/widgets/munasakna_bottom_nav.dart';
+import '../../../standalone_backend/application/manasakna_standalone_backend_providers.dart';
 import '../../application/manasikuna_1448_launch_controller.dart';
 import '../../data/manasikuna_1448_synthetic_source.dart';
 import '../../domain/manasikuna_1448_launch_models.dart';
@@ -101,6 +102,8 @@ class _ActivationView extends StatelessWidget {
         const _TopIdentityHeader(),
         const SizedBox(height: 14),
         const _TruthfulModeBanner(),
+        const SizedBox(height: 12),
+        const _CurrentSeasonBanner(),
         const SizedBox(height: 18),
         Text(
           'فعّل رحلتك 1448',
@@ -300,11 +303,44 @@ class _TopIdentityHeader extends StatelessWidget {
   }
 }
 
-class _TruthfulModeBanner extends StatelessWidget {
+class _CurrentSeasonBanner extends ConsumerWidget {
+  const _CurrentSeasonBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final season = ref.watch(manasaknaCurrentSeasonProvider);
+    return season.when(
+      data: (value) => value == null
+          ? const SizedBox.shrink()
+          : _SurfaceCard(
+              child: Row(
+                children: <Widget>[
+                  const Icon(Icons.calendar_month_outlined),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${value.titleAr} — ${value.status}',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _TruthfulModeBanner extends ConsumerWidget {
   const _TruthfulModeBanner();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final backend = ref.watch(manasaknaStandaloneBackendProvider);
+    final message = backend.isConfigured
+        ? 'وضع Standalone Backend تجريبي: لا اتصال بنسك ولا بيانات حجاج حقيقية. التفعيل والجلسة والبيانات التشغيلية تأتي من Backend مناسكنا الاصطناعي فقط.'
+        : 'وضع تجريبي محلي: لا اتصال بنسك، لا بيانات حجاج حقيقية، ولا معاملات رسمية. يعمل هذا المسار Offline-first ببيانات Synthetic فقط.';
     return Container(
       key: const ValueKey<String>('season1448-truthful-mode-banner'),
       padding: const EdgeInsets.all(12),
@@ -313,14 +349,14 @@ class _TruthfulModeBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFEBCB7A)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(Icons.science_rounded, color: Color(0xFF8D6512)),
-          SizedBox(width: 9),
+          const Icon(Icons.science_rounded, color: Color(0xFF8D6512)),
+          const SizedBox(width: 9),
           Expanded(
             child: Text(
-              'وضع تجريبي محلي: لا اتصال بنسك، لا بيانات حجاج حقيقية، ولا معاملات رسمية. يعمل هذا المسار Offline-first ببيانات Synthetic فقط.',
+              message,
               style: TextStyle(
                 color: Color(0xFF6D5016),
                 height: 1.45,

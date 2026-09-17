@@ -236,7 +236,8 @@ void main() {
     );
   });
 
-  test('snapshot v2 persists contract metadata but never raw activation token',
+  test(
+      'snapshot v3 persists contract metadata and optional session token but never raw activation token',
       () async {
     const source = Manasikuna1448SyntheticSource();
     final bundle = source.bundleForToken(
@@ -277,7 +278,7 @@ void main() {
       decoded['schemaVersion'],
       Manasikuna1448LocalStore.snapshotSchemaVersion,
     );
-    expect(Manasikuna1448LocalStore.snapshotSchemaVersion, 2);
+    expect(Manasikuna1448LocalStore.snapshotSchemaVersion, 3);
 
     final profileJson = Map<String, dynamic>.from(decoded['profile'] as Map);
     final packJson = Map<String, dynamic>.from(decoded['pack'] as Map);
