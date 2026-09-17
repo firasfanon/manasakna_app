@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/admin_environment.dart';
 import '../data/admin_repository.dart';
+import 'admin_presenters.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
@@ -33,12 +34,12 @@ class _DashboardPageState extends State<DashboardPage> {
     _AdminNavItem('الإشعارات', Icons.notifications_outlined),
     _AdminNavItem('سجل التدقيق', Icons.fact_check_outlined),
   ];
+
   void _refresh() => setState(() => _refreshEpoch++);
 
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 960;
-    final body = _buildSection();
     return Scaffold(
       appBar: AppBar(
         title: const Text(AdminEnvironment.productNameAr),
@@ -47,13 +48,14 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Center(
               child: Chip(
-                avatar: const Icon(Icons.science_outlined, size: 18),
+                key: const ValueKey('environment-status-chip'),
+                avatar: const Icon(Icons.shield_outlined, size: 18),
                 label: const Text(AdminEnvironment.environmentLabel),
               ),
             ),
           ),
           IconButton(
-            tooltip: 'تحديث',
+            tooltip: 'تحديث البيانات',
             onPressed: _refresh,
             icon: const Icon(Icons.refresh),
           ),
@@ -69,27 +71,32 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           if (wide)
             SizedBox(
-              width: 250,
+              width: 272,
               child: Material(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                 child: _navigation(closeOnTap: false),
               ),
             ),
-          Expanded(child: body),
+          Expanded(child: _buildSection()),
         ],
       ),
     );
   }
 
   Widget _navigation({required bool closeOnTap}) {
+    final roles = _adminRoleLabels(widget.adminContext);
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
-          const ListTile(
-            leading: Icon(Icons.mosque_outlined),
-            title: Text('مناسكنا 1448'),
-            subtitle: Text('Standalone Admin V1'),
+          ListTile(
+            leading: const Icon(Icons.mosque_outlined),
+            title: const Text('مناسكنا 1448'),
+            subtitle: Text(
+              roles.isEmpty
+                  ? 'لوحة الإدارة والتشغيل'
+                  : 'لوحة الإدارة والتشغيل • ${roles.first}',
+            ),
           ),
           const Divider(),
           for (var i = 0; i < _items.length; i++)
@@ -106,10 +113,7 @@ class _DashboardPageState extends State<DashboardPage> {
           const Divider(),
           const Padding(
             padding: EdgeInsets.all(16),
-            child: Text(
-              'V1 مغلق على البيانات الاصطناعية فقط. نسك غير مطلوب لهذه المرحلة.',
-              style: TextStyle(fontSize: 12),
-            ),
+            child: _EnvironmentNotice(),
           ),
         ],
       ),
@@ -123,14 +127,10 @@ class _DashboardPageState extends State<DashboardPage> {
         repository: widget.repository,
         adminContext: widget.adminContext,
       ),
-      1 => _ListSection(
+      1 => _SeasonsSection(
         key: ValueKey('seasons-$_refreshEpoch'),
-        title: 'المواسم',
-        future: widget.repository.seasons(),
-        actionLabel: widget.repository.syntheticToolsEnabled
-            ? 'تهيئة موسم 1448'
-            : null,
-        onAction: widget.repository.syntheticToolsEnabled
+        repository: widget.repository,
+        onSeedSeason: widget.repository.syntheticToolsEnabled
             ? _seedSeason1448
             : null,
       ),
@@ -139,35 +139,25 @@ class _DashboardPageState extends State<DashboardPage> {
         repository: widget.repository,
         onChanged: _refresh,
       ),
-      3 => _ListSection(
+      3 => _CampaignsSection(
         key: ValueKey('campaigns-$_refreshEpoch'),
-        title: 'الحملات والمجموعات',
-        future: widget.repository.campaigns(),
+        repository: widget.repository,
       ),
-      4 => _ListSection(
+      4 => _ContentSection(
         key: ValueKey('content-$_refreshEpoch'),
-        title: 'المحتوى والفتاوى',
-        future: widget.repository.content(),
-        actionLabel: widget.repository.syntheticToolsEnabled
-            ? 'إضافة محتوى تجريبي'
-            : null,
-        onAction: widget.repository.syntheticToolsEnabled ? _seedContent : null,
+        repository: widget.repository,
+        onSeed: widget.repository.syntheticToolsEnabled ? _seedContent : null,
       ),
-      5 => _ListSection(
+      5 => _NotificationsSection(
         key: ValueKey('notifications-$_refreshEpoch'),
-        title: 'الإشعارات',
-        future: widget.repository.notifications(),
-        actionLabel: widget.repository.syntheticToolsEnabled
-            ? 'إضافة إشعار تجريبي'
-            : null,
-        onAction: widget.repository.syntheticToolsEnabled
+        repository: widget.repository,
+        onSeed: widget.repository.syntheticToolsEnabled
             ? _seedNotification
             : null,
       ),
-      _ => _ListSection(
+      _ => _AuditSection(
         key: ValueKey('audit-$_refreshEpoch'),
-        title: 'سجل التدقيق',
-        future: widget.repository.audit(),
+        repository: widget.repository,
       ),
     };
   }
@@ -229,6 +219,39 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
+class _EnvironmentNotice extends StatelessWidget {
+  const _EnvironmentNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.secondaryContainer.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.science_outlined, size: 18),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'بيئة تشغيل محمية ببيانات تجريبية فقط. '
+                'البيانات الحقيقية وتكامل نسك والإنتاج غير مفعّلة.',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DashboardOverview extends StatelessWidget {
   const _DashboardOverview({
     super.key,
@@ -241,19 +264,29 @@ class _DashboardOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final name = '${adminContext['name'] ?? ''}'.trim();
+    final roles = _adminRoleLabels(adminContext);
     return FutureBuilder<Map<String, dynamic>>(
       future: repository.dashboard(),
       builder: (context, snapshot) {
         return _SectionFrame(
           title: 'لوحة المتابعة',
-          subtitle: 'حالة التشغيل المستقل لمناسكنا — بيانات اصطناعية فقط',
+          subtitle: 'مؤشرات تشغيلية لحالة مناسكنا في البيئة التجريبية المحمية',
           child: snapshot.connectionState != ConnectionState.done
-              ? const Center(child: CircularProgressIndicator())
+              ? const _LoadingView()
               : snapshot.hasError
               ? _ErrorView(snapshot.error)
-              : _DashboardCards(
-                  data: snapshot.data ?? const {},
-                  adminContext: adminContext,
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _AdminIdentitySummary(
+                      name: name,
+                      roles: roles,
+                      isSuperuser: adminContext['is_superuser'] == true,
+                    ),
+                    const SizedBox(height: 20),
+                    _DashboardMetrics(data: snapshot.data ?? const {}),
+                  ],
                 ),
         );
       },
@@ -261,46 +294,196 @@ class _DashboardOverview extends StatelessWidget {
   }
 }
 
-class _DashboardCards extends StatelessWidget {
-  const _DashboardCards({required this.data, required this.adminContext});
+class _AdminIdentitySummary extends StatelessWidget {
+  const _AdminIdentitySummary({
+    required this.name,
+    required this.roles,
+    required this.isSuperuser,
+  });
 
-  final Map<String, dynamic> data;
-  final Map<String, dynamic> adminContext;
+  final String name;
+  final List<String> roles;
+  final bool isSuperuser;
 
   @override
   Widget build(BuildContext context) {
-    final entries = <MapEntry<String, dynamic>>[
-      ...data.entries,
-      MapEntry('admin_context', adminContext),
+    final labels = <String>[
+      if (isSuperuser) 'مدير أعلى',
+      ...roles.where((role) => role != 'مدير أعلى'),
     ];
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: entries
-          .map((entry) {
-            return SizedBox(
-              width: 260,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.key,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        const JsonEncoder.withIndent('  ').convert(entry.value),
-                      ),
-                    ],
-                  ),
+    return Card(
+      key: const ValueKey('admin-identity-summary'),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 12,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name.isEmpty ? 'جلسة إدارية موثقة' : 'مرحبًا، $name',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'تم التحقق من هوية المستخدم وسياق الصلاحيات عبر Supabase.',
+                ),
+              ],
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final label in labels) Chip(label: Text(label)),
+                const Chip(
+                  avatar: Icon(Icons.verified_user_outlined, size: 18),
+                  label: Text('جلسة موثقة'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardMetrics extends StatelessWidget {
+  const _DashboardMetrics({required this.data});
+
+  final Map<String, dynamic> data;
+
+  static const _metrics = <_MetricDefinition>[
+    _MetricDefinition('seasons', 'المواسم', Icons.calendar_month_outlined),
+    _MetricDefinition(
+      'lottery_rounds',
+      'جولات القرعة',
+      Icons.how_to_reg_outlined,
+    ),
+    _MetricDefinition('campaigns', 'الحملات', Icons.campaign_outlined),
+    _MetricDefinition(
+      'published_content',
+      'المحتوى المنشور',
+      Icons.menu_book_outlined,
+    ),
+    _MetricDefinition(
+      'pending_notifications',
+      'إشعارات قيد الإجراء',
+      Icons.notifications_active_outlined,
+    ),
+    _MetricDefinition(
+      'audit_events',
+      'أحداث التدقيق',
+      Icons.fact_check_outlined,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth >= 900
+            ? (constraints.maxWidth - 32) / 3
+            : constraints.maxWidth >= 560
+            ? (constraints.maxWidth - 16) / 2
+            : constraints.maxWidth;
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            for (final metric in _metrics)
+              SizedBox(
+                width: cardWidth,
+                child: _MetricCard(
+                  key: ValueKey('dashboard-metric-${metric.key}'),
+                  definition: metric,
+                  value: data[metric.key] ?? 0,
                 ),
               ),
-            );
-          })
-          .toList(growable: false),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({super.key, required this.definition, required this.value});
+
+  final _MetricDefinition definition;
+  final Object value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            CircleAvatar(radius: 24, child: Icon(definition.icon)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$value',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(definition.label),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SeasonsSection extends StatelessWidget {
+  const _SeasonsSection({
+    super.key,
+    required this.repository,
+    required this.onSeedSeason,
+  });
+
+  final AdminRepository repository;
+  final Future<void> Function()? onSeedSeason;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionFrame(
+      title: 'المواسم',
+      subtitle: 'إدارة دورة الموسم من التسجيل حتى الإغلاق والتشغيل الميداني',
+      actions: [
+        if (onSeedSeason != null)
+          FilledButton.icon(
+            onPressed: onSeedSeason,
+            icon: const Icon(Icons.add),
+            label: const Text('تهيئة موسم 1448 التجريبي'),
+          ),
+      ],
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: repository.seasons(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const _LoadingView();
+          }
+          if (snapshot.hasError) return _ErrorView(snapshot.error);
+          final rows = snapshot.data ?? const <Map<String, dynamic>>[];
+          return _RecordCollection(
+            emptyLabel: 'لا توجد مواسم مسجلة.',
+            rows: rows,
+            modelBuilder: _seasonModel,
+          );
+        },
+      ),
     );
   }
 }
@@ -322,39 +505,39 @@ class _LotterySection extends StatefulWidget {
 class _LotterySectionState extends State<_LotterySection> {
   bool _busy = false;
   String? _message;
+
   Future<void> _seedFixture() async {
-    setState(() {
-      _busy = true;
-      _message = null;
-    });
-    try {
-      final result = await widget.repository.seedSyntheticFixture();
-      if (!mounted) return;
-      setState(
-        () => _message = const JsonEncoder.withIndent('  ').convert(result),
-      );
-      widget.onChanged();
-    } catch (error) {
-      if (mounted) setState(() => _message = 'ERROR: $error');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    await _runSynthetic(
+      widget.repository.seedSyntheticFixture,
+      successPrefix: 'تم إنشاء العينة التجريبية',
+    );
   }
 
   Future<void> _runSyntheticE2E() async {
+    await _runSynthetic(
+      widget.repository.runSyntheticE2E,
+      successPrefix: 'اكتمل اختبار المسار التجريبي',
+    );
+  }
+
+  Future<void> _runSynthetic(
+    Future<Map<String, dynamic>> Function() action, {
+    required String successPrefix,
+  }) async {
     setState(() {
       _busy = true;
       _message = null;
     });
     try {
-      final result = await widget.repository.runSyntheticE2E();
+      final result = await action();
       if (!mounted) return;
       setState(
-        () => _message = const JsonEncoder.withIndent('  ').convert(result),
+        () => _message =
+            '$successPrefix.\n${const JsonEncoder.withIndent('  ').convert(result)}',
       );
       widget.onChanged();
     } catch (error) {
-      if (mounted) setState(() => _message = 'E2E ERROR: $error');
+      if (mounted) setState(() => _message = 'تعذر التنفيذ: $error');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -364,21 +547,18 @@ class _LotterySectionState extends State<_LotterySection> {
   Widget build(BuildContext context) {
     return _SectionFrame(
       title: 'القرعة والأهلية',
-      subtitle:
-          'V1 يمنع البيانات الحقيقية ويستخدم Fixture اصطناعيًا من 12 حالة.',
+      subtitle: 'متابعة جولات القرعة ونتائجها ضمن حدود البيانات التجريبية',
       actions: widget.repository.syntheticToolsEnabled
           ? [
               FilledButton.icon(
                 onPressed: _busy ? null : _seedFixture,
                 icon: const Icon(Icons.science_outlined),
-                label: Text(
-                  _busy ? 'جارٍ التنفيذ…' : 'إنشاء وتشغيل عينة 12 حالة',
-                ),
+                label: Text(_busy ? 'جارٍ التنفيذ…' : 'إنشاء عينة 12 حالة'),
               ),
               OutlinedButton.icon(
                 onPressed: _busy ? null : _runSyntheticE2E,
                 icon: const Icon(Icons.verified_outlined),
-                label: const Text('E2E: القرعة ← المجموعة ← التفعيل'),
+                label: const Text('اختبار المسار الكامل'),
               ),
             ]
           : const [],
@@ -386,12 +566,24 @@ class _LotterySectionState extends State<_LotterySection> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!widget.repository.syntheticToolsEnabled) ...[
-            const Card(
-              key: ValueKey('synthetic-tools-disabled'),
+            Card(
+              key: const ValueKey('synthetic-tools-disabled'),
               child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Synthetic test tools are disabled. Enable MANASAKNA_ENABLE_SYNTHETIC_TOOLS only for controlled UAT.',
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'أدوات الاختبار الاصطناعية متوقفة في هذه الجلسة. '
+                        'لا يمكن إنشاء fixtures أو تشغيل E2E من الواجهة.',
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -408,7 +600,25 @@ class _LotterySectionState extends State<_LotterySection> {
           ],
           FutureBuilder<List<Map<String, dynamic>>>(
             future: widget.repository.lotteryRounds(),
-            builder: (context, snapshot) => _FutureRows(snapshot: snapshot),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const _LoadingView();
+              }
+              if (snapshot.hasError) return _ErrorView(snapshot.error);
+              final rounds = snapshot.data ?? const <Map<String, dynamic>>[];
+              if (rounds.isEmpty) {
+                return const _EmptyView('لا توجد جولات قرعة بعد.');
+              }
+              return Column(
+                children: [
+                  for (final round in rounds)
+                    _LotteryRoundCard(
+                      round: round,
+                      repository: widget.repository,
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -416,83 +626,588 @@ class _LotterySectionState extends State<_LotterySection> {
   }
 }
 
-class _ListSection extends StatelessWidget {
-  const _ListSection({
-    super.key,
-    required this.title,
-    required this.future,
-    this.actionLabel,
-    this.onAction,
-  });
+class _LotteryRoundCard extends StatelessWidget {
+  const _LotteryRoundCard({required this.round, required this.repository});
 
-  final String title;
-  final Future<List<Map<String, dynamic>>> future;
-  final String? actionLabel;
-  final Future<void> Function()? onAction;
+  final Map<String, dynamic> round;
+  final AdminRepository repository;
+
   @override
   Widget build(BuildContext context) {
-    return _SectionFrame(
-      title: title,
-      actions: [
-        if (actionLabel != null && onAction != null)
-          FilledButton.icon(
-            onPressed: onAction,
-            icon: const Icon(Icons.add),
-            label: Text(actionLabel!),
+    final roundId = '${round['id'] ?? ''}';
+    final totalEntries = round['total_entries'] ?? 0;
+    final selectedCount = round['selected_count'] ?? 0;
+    final waitlistedCount = round['waitlisted_count'] ?? 0;
+    final ineligibleCount = round['ineligible_count'] ?? 0;
+    return Card(
+      child: ExpansionTile(
+        leading: const Icon(Icons.how_to_reg_outlined),
+        title: Text(
+          '${round['title_ar'] ?? round['round_code'] ?? 'جولة قرعة'}',
+        ),
+        subtitle: Text(
+          'الإجمالي $totalEntries • المختارون $selectedCount • '
+          'الانتظار $waitlistedCount • غير المؤهلين $ineligibleCount',
+        ),
+        trailing: _StatusChip(rawStatus: round['status']),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _InfoWrap(
+                  items: [
+                    _InfoItem(
+                      'المرجع التقني',
+                      AdminPresentation.referenceForDisplay(
+                        round['round_code'],
+                      ),
+                    ),
+                    _InfoItem('السعة المعتمدة', round['capacity']),
+                    _InfoItem('إجمالي الحالات', totalEntries),
+                    _InfoItem('المختارون', selectedCount),
+                    _InfoItem('قائمة الانتظار', waitlistedCount),
+                    _InfoItem('غير المؤهلين', ineligibleCount),
+                    _InfoItem('نسخة الخوارزمية', round['algorithm_version']),
+                    _InfoItem(
+                      'وقت التنفيذ',
+                      AdminPresentation.dateTimeAr(round['executed_at']),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (roundId.isNotEmpty)
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: repository.lotteryResults(roundId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const LinearProgressIndicator();
+                      }
+                      if (snapshot.hasError) {
+                        return const Text('تعذر تحميل ملخص نتائج الجولة.');
+                      }
+                      final rows =
+                          snapshot.data ?? const <Map<String, dynamic>>[];
+                      int count(String outcome) =>
+                          rows.where((row) => row['outcome'] == outcome).length;
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          Chip(label: Text('الإجمالي ${rows.length}')),
+                          Chip(label: Text('مختار ${count('selected')}')),
+                          Chip(label: Text('انتظار ${count('waitlisted')}')),
+                          Chip(label: Text('غير مؤهل ${count('ineligible')}')),
+                        ],
+                      );
+                    },
+                  ),
+              ],
+            ),
           ),
-      ],
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: future,
-        builder: (context, snapshot) => _FutureRows(snapshot: snapshot),
+        ],
       ),
     );
   }
 }
 
-class _FutureRows extends StatelessWidget {
-  const _FutureRows({required this.snapshot});
-  final AsyncSnapshot<List<Map<String, dynamic>>> snapshot;
+class _CampaignsSection extends StatelessWidget {
+  const _CampaignsSection({super.key, required this.repository});
+
+  final AdminRepository repository;
 
   @override
   Widget build(BuildContext context) {
-    if (snapshot.connectionState != ConnectionState.done) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (snapshot.hasError) return _ErrorView(snapshot.error);
-    final rows = snapshot.data ?? const <Map<String, dynamic>>[];
-    if (rows.isEmpty) {
-      return const Center(child: Text('لا توجد سجلات بعد.'));
-    }
-    return Column(
-      children: rows
-          .map((row) {
-            return Card(
-              child: ExpansionTile(
-                title: Text(_rowTitle(row)),
-                subtitle: Text(_rowSubtitle(row)),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: SelectableText(
-                        const JsonEncoder.withIndent('  ').convert(row),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          })
-          .toList(growable: false),
+    return _SectionFrame(
+      title: 'الحملات والمجموعات',
+      subtitle:
+          'الصورة التشغيلية للحملات والمجموعات والمشرفين والحجاج المخصصين',
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: repository.campaigns(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const _LoadingView();
+          }
+          if (snapshot.hasError) return _ErrorView(snapshot.error);
+          final rows = snapshot.data ?? const <Map<String, dynamic>>[];
+          if (rows.isEmpty) {
+            return const _EmptyView('لا توجد حملات مسجلة.');
+          }
+          return Column(
+            children: [
+              for (final campaign in rows)
+                _CampaignCard(campaign: campaign, repository: repository),
+            ],
+          );
+        },
+      ),
     );
   }
+}
 
-  static String _rowTitle(Map<String, dynamic> row) =>
-      '${row['name_ar'] ?? row['title_ar'] ?? row['season_code'] ?? row['round_code'] ?? row['campaign_code'] ?? row['id'] ?? 'سجل'}';
+class _CampaignCard extends StatelessWidget {
+  const _CampaignCard({required this.campaign, required this.repository});
 
-  static String _rowSubtitle(Map<String, dynamic> row) =>
-      '${row['status'] ?? row['content_type'] ?? row['created_at'] ?? ''}';
+  final Map<String, dynamic> campaign;
+  final AdminRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final campaignId = '${campaign['id'] ?? ''}';
+    return Card(
+      child: ExpansionTile(
+        leading: const Icon(Icons.campaign_outlined),
+        title: Text(
+          '${campaign['title_ar'] ?? campaign['campaign_code'] ?? 'حملة'}',
+        ),
+        subtitle: Text(
+          'المجموعات: ${campaign['group_count'] ?? 0} • '
+          '${AdminPresentation.statusAr(campaign['status'])}',
+        ),
+        trailing: _StatusChip(rawStatus: campaign['status']),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _InfoWrap(
+                  items: [
+                    _InfoItem(
+                      'المرجع التقني',
+                      AdminPresentation.referenceForDisplay(
+                        campaign['campaign_code'],
+                      ),
+                    ),
+                    _InfoItem(
+                      'بداية الحملة',
+                      AdminPresentation.dateTimeAr(campaign['starts_at']),
+                    ),
+                    _InfoItem(
+                      'نهاية الحملة',
+                      AdminPresentation.dateTimeAr(campaign['ends_at']),
+                    ),
+                    _InfoItem(
+                      'الوصف',
+                      '${campaign['description_ar'] ?? 'لا يوجد وصف'}',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (campaignId.isNotEmpty)
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: repository.campaignGroups(campaignId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const LinearProgressIndicator();
+                      }
+                      if (snapshot.hasError) {
+                        return const Text('تعذر تحميل مجموعات الحملة.');
+                      }
+                      final groups =
+                          snapshot.data ?? const <Map<String, dynamic>>[];
+                      if (groups.isEmpty) {
+                        return const Text('لا توجد مجموعات ضمن هذه الحملة.');
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'المجموعات (${groups.length})',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 8),
+                          for (final group in groups)
+                            _GroupSummaryCard(
+                              group: group,
+                              repository: repository,
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GroupSummaryCard extends StatelessWidget {
+  const _GroupSummaryCard({required this.group, required this.repository});
+
+  final Map<String, dynamic> group;
+  final AdminRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final groupId = '${group['id'] ?? ''}';
+    return Card(
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
+      child: ListTile(
+        leading: const Icon(Icons.groups_2_outlined),
+        title: Text('${group['title_ar'] ?? group['group_code'] ?? 'مجموعة'}'),
+        subtitle: Text(
+          'المشرف: ${group['supervisor_label'] ?? 'غير محدد'} • '
+          'السعة: ${group['capacity'] ?? 'غير محددة'}',
+        ),
+        trailing: groupId.isEmpty
+            ? _StatusChip(rawStatus: group['status'])
+            : FutureBuilder<List<Map<String, dynamic>>>(
+                future: repository.groupMembers(groupId),
+                builder: (context, snapshot) {
+                  final count = snapshot.hasData ? snapshot.data!.length : null;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _StatusChip(rawStatus: group['status']),
+                      if (count != null)
+                        Text(
+                          '$count حاج',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                    ],
+                  );
+                },
+              ),
+      ),
+    );
+  }
+}
+
+class _ContentSection extends StatelessWidget {
+  const _ContentSection({
+    super.key,
+    required this.repository,
+    required this.onSeed,
+  });
+
+  final AdminRepository repository;
+  final Future<void> Function()? onSeed;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionFrame(
+      title: 'المحتوى والفتاوى',
+      subtitle: 'المحتوى المنشور مع نوعه وحالة اعتماده ومصدره المسجل',
+      actions: [
+        if (onSeed != null)
+          FilledButton.icon(
+            onPressed: onSeed,
+            icon: const Icon(Icons.add),
+            label: const Text('إضافة محتوى تجريبي'),
+          ),
+      ],
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: repository.content(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const _LoadingView();
+          }
+          if (snapshot.hasError) return _ErrorView(snapshot.error);
+          return _RecordCollection(
+            emptyLabel: 'لا يوجد محتوى بعد.',
+            rows: snapshot.data ?? const <Map<String, dynamic>>[],
+            modelBuilder: _contentModel,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _NotificationsSection extends StatelessWidget {
+  const _NotificationsSection({
+    super.key,
+    required this.repository,
+    required this.onSeed,
+  });
+
+  final AdminRepository repository;
+  final Future<void> Function()? onSeed;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionFrame(
+      title: 'الإشعارات',
+      subtitle: 'متابعة الجمهور المستهدف وجدولة الإرسال وحالة النشر',
+      actions: [
+        if (onSeed != null)
+          FilledButton.icon(
+            onPressed: onSeed,
+            icon: const Icon(Icons.add_alert_outlined),
+            label: const Text('إضافة إشعار تجريبي'),
+          ),
+      ],
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: repository.notifications(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const _LoadingView();
+          }
+          if (snapshot.hasError) return _ErrorView(snapshot.error);
+          return _RecordCollection(
+            emptyLabel: 'لا توجد إشعارات بعد.',
+            rows: snapshot.data ?? const <Map<String, dynamic>>[],
+            modelBuilder: _notificationModel,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AuditSection extends StatelessWidget {
+  const _AuditSection({super.key, required this.repository});
+
+  final AdminRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionFrame(
+      title: 'سجل التدقيق',
+      subtitle: 'تسلسل مفهوم للأفعال الإدارية والكيانات المتأثرة ووقت التنفيذ',
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: repository.audit(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const _LoadingView();
+          }
+          if (snapshot.hasError) return _ErrorView(snapshot.error);
+          return _RecordCollection(
+            emptyLabel: 'لا توجد أحداث تدقيق بعد.',
+            rows: snapshot.data ?? const <Map<String, dynamic>>[],
+            modelBuilder: _auditModel,
+            showStatusFilter: false,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _RecordCollection extends StatefulWidget {
+  const _RecordCollection({
+    required this.rows,
+    required this.modelBuilder,
+    required this.emptyLabel,
+    this.showStatusFilter = true,
+  });
+
+  final List<Map<String, dynamic>> rows;
+  final _RecordModel Function(Map<String, dynamic>) modelBuilder;
+  final String emptyLabel;
+  final bool showStatusFilter;
+
+  @override
+  State<_RecordCollection> createState() => _RecordCollectionState();
+}
+
+class _RecordCollectionState extends State<_RecordCollection> {
+  String _query = '';
+  String _status = 'all';
+
+  @override
+  Widget build(BuildContext context) {
+    final models = widget.rows.map(widget.modelBuilder).toList(growable: false);
+    final statuses =
+        models
+            .map((model) => model.rawStatus)
+            .where((status) => status != null && status.isNotEmpty)
+            .cast<String>()
+            .toSet()
+            .toList()
+          ..sort();
+    final visible = models
+        .where((model) {
+          final needle = _query.trim().toLowerCase();
+          final matchesText =
+              needle.isEmpty ||
+              model.searchableText.toLowerCase().contains(needle);
+          final matchesStatus = _status == 'all' || model.rawStatus == _status;
+          return matchesText && matchesStatus;
+        })
+        .toList(growable: false);
+
+    if (models.isEmpty) return _EmptyView(widget.emptyLabel);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _RecordFilterBar(
+          showStatusFilter: widget.showStatusFilter && statuses.length > 1,
+          statuses: statuses,
+          selectedStatus: _status,
+          onStatusChanged: (value) => setState(() => _status = value),
+          onQueryChanged: (value) => setState(() => _query = value),
+        ),
+        const SizedBox(height: 12),
+        if (visible.isEmpty)
+          const _EmptyView('لا توجد نتائج مطابقة للبحث أو الفلتر.')
+        else
+          for (final model in visible) _RecordCard(model: model),
+      ],
+    );
+  }
+}
+
+class _RecordFilterBar extends StatelessWidget {
+  const _RecordFilterBar({
+    required this.showStatusFilter,
+    required this.statuses,
+    required this.selectedStatus,
+    required this.onStatusChanged,
+    required this.onQueryChanged,
+  });
+
+  final bool showStatusFilter;
+  final List<String> statuses;
+  final String selectedStatus;
+  final ValueChanged<String> onStatusChanged;
+  final ValueChanged<String> onQueryChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        SizedBox(
+          width: 320,
+          child: TextField(
+            onChanged: onQueryChanged,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search),
+              labelText: 'بحث',
+              hintText: 'ابحث بالاسم أو الرمز أو الوصف',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+        ),
+        if (showStatusFilter)
+          SizedBox(
+            width: 220,
+            child: DropdownButtonFormField<String>(
+              initialValue: selectedStatus,
+              decoration: const InputDecoration(
+                labelText: 'الحالة',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: [
+                const DropdownMenuItem(value: 'all', child: Text('كل الحالات')),
+                for (final status in statuses)
+                  DropdownMenuItem(
+                    value: status,
+                    child: Text(AdminPresentation.statusAr(status)),
+                  ),
+              ],
+              onChanged: (value) => onStatusChanged(value ?? 'all'),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _RecordCard extends StatelessWidget {
+  const _RecordCard({required this.model});
+
+  final _RecordModel model;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ExpansionTile(
+        leading: Icon(model.icon),
+        title: Text(model.title),
+        subtitle: model.subtitle.isEmpty ? null : Text(model.subtitle),
+        trailing: model.rawStatus == null
+            ? const Icon(Icons.expand_more)
+            : _StatusChip(rawStatus: model.rawStatus),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: _InfoWrap(items: model.details),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.rawStatus});
+  final Object? rawStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = AdminPresentation.statusAr(rawStatus);
+    return Chip(visualDensity: VisualDensity.compact, label: Text(label));
+  }
+}
+
+class _InfoWrap extends StatelessWidget {
+  const _InfoWrap({required this.items});
+  final List<_InfoItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth >= 720
+            ? (constraints.maxWidth - 24) / 3
+            : constraints.maxWidth >= 420
+            ? (constraints.maxWidth - 12) / 2
+            : constraints.maxWidth;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final item in items)
+              SizedBox(
+                width: width,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).dividerColor.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.label,
+                          style: Theme.of(context).textTheme.labelMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${item.value ?? '—'}',
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _SectionFrame extends StatelessWidget {
@@ -510,8 +1225,14 @@ class _SectionFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final viewport = MediaQuery.sizeOf(context).width;
+    final padding = viewport >= 1200
+        ? 32.0
+        : viewport >= 600
+        ? 24.0
+        : 16.0;
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(padding),
       children: [
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -519,15 +1240,24 @@ class _SectionFrame extends StatelessWidget {
           spacing: 16,
           runSpacing: 12,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.headlineMedium),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 6),
-                  Text(subtitle!),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle!,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
             Wrap(spacing: 8, runSpacing: 8, children: actions),
           ],
@@ -535,6 +1265,43 @@ class _SectionFrame extends StatelessWidget {
         const SizedBox(height: 20),
         child,
       ],
+    );
+  }
+}
+
+class _LoadingView extends StatelessWidget {
+  const _LoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 48),
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _EmptyView extends StatelessWidget {
+  const _EmptyView(this.message);
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 40,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            const SizedBox(height: 10),
+            Text(message),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -548,13 +1315,220 @@ class _ErrorView extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
-        child: Text(
-          'تعذر تحميل البيانات: $error',
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        child: Row(
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'تعذر تحميل البيانات. أعد المحاولة من زر التحديث.',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+_RecordModel _seasonModel(Map<String, dynamic> row) {
+  final year = row['hijri_year'];
+  final gregorian = row['gregorian_year'];
+  final seasonCode = '${row['season_code'] ?? ''}'.trim();
+  final bits = <String>[
+    AdminPresentation.syntheticSeasonLabel(row),
+    if (year != null) '$year هـ',
+    if (gregorian != null) '$gregorian م',
+    if (seasonCode.isNotEmpty &&
+        !AdminPresentation.isSyntheticReference(seasonCode))
+      seasonCode,
+  ];
+  return _RecordModel(
+    row: row,
+    icon: Icons.calendar_month_outlined,
+    title: '${row['title_ar'] ?? row['season_code'] ?? 'موسم'}',
+    subtitle: bits.join(' • '),
+    rawStatus: '${row['status'] ?? ''}',
+    details: [
+      _InfoItem('نوع البيانات', AdminPresentation.syntheticSeasonLabel(row)),
+      _InfoItem(
+        'المرجع التقني',
+        AdminPresentation.referenceForDisplay(row['season_code']),
+      ),
+      _InfoItem(
+        'فتح التسجيل',
+        AdminPresentation.dateTimeAr(row['registration_opens_at']),
+      ),
+      _InfoItem(
+        'إغلاق التسجيل',
+        AdminPresentation.dateTimeAr(row['registration_closes_at']),
+      ),
+      _InfoItem(
+        'بدء العمليات',
+        AdminPresentation.dateTimeAr(row['operations_start_at']),
+      ),
+      _InfoItem(
+        'نهاية العمليات',
+        AdminPresentation.dateTimeAr(row['operations_end_at']),
+      ),
+      _InfoItem('آخر تحديث', AdminPresentation.dateTimeAr(row['updated_at'])),
+    ],
+  );
+}
+
+_RecordModel _contentModel(Map<String, dynamic> row) {
+  final body = '${row['body_ar'] ?? ''}'.trim();
+  final semanticType = AdminPresentation.semanticContentTypeAr(row);
+  return _RecordModel(
+    row: row,
+    icon: _contentIconForRow(row),
+    title: '${row['title_ar'] ?? row['slug'] ?? 'محتوى'}',
+    subtitle: semanticType,
+    rawStatus: '${row['status'] ?? ''}',
+    details: [
+      _InfoItem('التصنيف التشغيلي', semanticType),
+      _InfoItem(
+        'نوع السجل',
+        AdminPresentation.contentTypeAr(row['content_type']),
+      ),
+      _InfoItem('جهة/مصدر الاعتماد', AdminPresentation.authorityLabel(row)),
+      _InfoItem(
+        'تاريخ النشر',
+        AdminPresentation.dateTimeAr(row['published_at']),
+      ),
+      _InfoItem(
+        'المرجع التقني',
+        AdminPresentation.referenceForDisplay(row['slug']),
+      ),
+      _InfoItem('ملخص المحتوى', body.isEmpty ? 'لا يوجد نص' : body),
+      _InfoItem('آخر تحديث', AdminPresentation.dateTimeAr(row['updated_at'])),
+    ],
+  );
+}
+
+_RecordModel _notificationModel(Map<String, dynamic> row) {
+  return _RecordModel(
+    row: row,
+    icon: Icons.notifications_outlined,
+    title: '${row['title_ar'] ?? 'إشعار'}',
+    subtitle: AdminPresentation.audienceAr(row['audience']),
+    rawStatus: '${row['status'] ?? ''}',
+    details: [
+      _InfoItem(
+        'الجمهور المستهدف',
+        AdminPresentation.audienceAr(row['audience']),
+      ),
+      _InfoItem(
+        'موعد الجدولة',
+        AdminPresentation.dateTimeAr(row['scheduled_for']),
+      ),
+      _InfoItem('وقت النشر', AdminPresentation.dateTimeAr(row['published_at'])),
+      _InfoItem('النص', row['body_ar'] ?? '—'),
+      _InfoItem('آخر تحديث', AdminPresentation.dateTimeAr(row['updated_at'])),
+    ],
+  );
+}
+
+_RecordModel _auditModel(Map<String, dynamic> row) {
+  final action = AdminPresentation.actionAr(row['action_key']);
+  final entity = AdminPresentation.entityAr(row['entity_type']);
+  return _RecordModel(
+    row: row,
+    icon: Icons.fact_check_outlined,
+    title: action,
+    subtitle: '$entity • ${AdminPresentation.dateTimeAr(row['created_at'])}',
+    rawStatus: null,
+    details: [
+      _InfoItem('الكيان', entity),
+      _InfoItem('معرّف الكيان', AdminPresentation.shortId(row['entity_id'])),
+      _InfoItem(
+        'المستخدم المنفذ',
+        AdminPresentation.shortId(row['actor_user_id']),
+      ),
+      _InfoItem('معرّف الطلب', AdminPresentation.shortId(row['request_id'])),
+      _InfoItem('وقت التنفيذ', AdminPresentation.dateTimeAr(row['created_at'])),
+      _InfoItem(
+        'توثيق التغيير',
+        row['after_state'] == null
+            ? 'لا توجد حالة لاحقة مسجلة'
+            : 'محفوظ في سجل التدقيق',
+      ),
+    ],
+  );
+}
+
+IconData _contentIconForRow(Map<String, dynamic> row) {
+  final semantic = AdminPresentation.semanticContentTypeAr(row);
+  if (semantic == 'محتوى شرعي' || semantic == 'فتوى') {
+    return Icons.gavel_outlined;
+  }
+  if (semantic == 'تنبيهات وإشعارات') return Icons.notifications_outlined;
+  if (semantic == 'خدمة الرحلة') return Icons.route_outlined;
+  final type = '${row['content_type'] ?? ''}';
+  return switch (type) {
+    'fatwa' => Icons.gavel_outlined,
+    'guidance' => Icons.menu_book_outlined,
+    'faq' => Icons.help_outline,
+    'service' => Icons.room_service_outlined,
+    'contact' => Icons.contact_phone_outlined,
+    'banner' => Icons.campaign_outlined,
+    _ => Icons.article_outlined,
+  };
+}
+
+List<String> _adminRoleLabels(Map<String, dynamic> context) {
+  final labels = <String>[];
+  if (context['is_superuser'] == true) labels.add('مدير أعلى');
+  final roles = context['roles'];
+  if (roles is List) {
+    for (final role in roles) {
+      final label = AdminPresentation.roleAr(role);
+      if (!labels.contains(label)) labels.add(label);
+    }
+  }
+  return labels;
+}
+
+class _RecordModel {
+  const _RecordModel({
+    required this.row,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.rawStatus,
+    required this.details,
+  });
+
+  final Map<String, dynamic> row;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? rawStatus;
+  final List<_InfoItem> details;
+
+  String get searchableText => <String>[
+    title,
+    subtitle,
+    if (rawStatus != null) AdminPresentation.statusAr(rawStatus),
+    for (final item in details) '${item.label} ${item.value ?? ''}',
+  ].join(' ');
+}
+
+class _InfoItem {
+  const _InfoItem(this.label, this.value);
+  final String label;
+  final Object? value;
+}
+
+class _MetricDefinition {
+  const _MetricDefinition(this.key, this.label, this.icon);
+  final String key;
+  final String label;
+  final IconData icon;
 }
 
 class _AdminNavItem {

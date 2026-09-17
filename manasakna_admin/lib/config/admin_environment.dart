@@ -45,8 +45,8 @@ class AdminEnvironment {
   static const productNameAr = 'مناسكنا — الإدارة والعمليات';
   static const productNameEn = 'Manasakna Admin & Operations';
   static const environmentLabel = syntheticToolsEnabled
-      ? 'V1 / SYNTHETIC TOOLS ENABLED'
-      : 'V1 / HARDENED / SYNTHETIC TOOLS OFF';
+      ? 'اختبار اصطناعي مفعّل'
+      : 'تجريبي • محمي';
 
   static const realPilgrimDataEnabled = false;
   static const productionEnabled = false;
