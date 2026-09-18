@@ -8,12 +8,15 @@ import '../../../../core/widgets/munasakna_bottom_nav.dart';
 import '../../../nusuk_data/domain/models/journey_overview.dart';
 import '../../../nusuk_data/domain/models/journey_step.dart';
 import '../../../nusuk_data/presentation/providers/nusuk_providers.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
 
 class JourneyPage extends ConsumerWidget {
   const JourneyPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsControllerProvider).value;
+    final isUmrah = settings?.preferredRitualPath == 'umrah';
     final overviewAsync = ref.watch(journeyOverviewProvider);
     final stepsAsync = ref.watch(journeyStepsProvider);
 
@@ -31,8 +34,8 @@ class JourneyPage extends ConsumerWidget {
         child: SafeArea(
           child: overviewAsync.when(
             data: (overview) => stepsAsync.when(
-              data: (steps) =>
-                  _JourneyVisualContent(overview: overview, steps: steps),
+              data: (steps) => _JourneyVisualContent(
+                  overview: overview, steps: steps, isUmrah: isUmrah),
               loading: () => const _CenteredLoader(),
               error: (_, __) => const _JourneyError(
                   message:
@@ -49,10 +52,12 @@ class JourneyPage extends ConsumerWidget {
 }
 
 class _JourneyVisualContent extends StatelessWidget {
-  const _JourneyVisualContent({required this.overview, required this.steps});
+  const _JourneyVisualContent(
+      {required this.overview, required this.steps, required this.isUmrah});
 
   final JourneyOverview overview;
   final List<JourneyStep> steps;
+  final bool isUmrah;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +88,7 @@ class _JourneyVisualContent extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Text(
-            'مراحل رحلة الحاج',
+            isUmrah ? 'مراحل رحلة المعتمر' : 'مراحل رحلة الحاج',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: MunasaknaTheme.deepHaramGreen,
@@ -98,9 +103,9 @@ class _JourneyVisualContent extends StatelessWidget {
               steps: steps, onTap: (step) => _showDetails(context, step)),
         ),
         const SizedBox(height: 18),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 18),
-          child: _ImportantNoticeCard(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: _ImportantNoticeCard(isUmrah: isUmrah),
         ),
       ],
     );
@@ -607,7 +612,9 @@ class _TimelineRow extends StatelessWidget {
 }
 
 class _ImportantNoticeCard extends StatelessWidget {
-  const _ImportantNoticeCard();
+  const _ImportantNoticeCard({required this.isUmrah});
+
+  final bool isUmrah;
 
   @override
   Widget build(BuildContext context) {
@@ -642,7 +649,9 @@ class _ImportantNoticeCard extends StatelessWidget {
                         fontWeight: FontWeight.w900)),
                 const SizedBox(height: 5),
                 Text(
-                    'راجع المتطلبات الصحية الرسمية والتطعيمات المطلوبة قبل السفر، واتبع مواعيد الجهة الصحية أو المنظمة المعتمدة.',
+                    isUmrah
+                        ? 'راجع متطلبات السفر والصحة الرسمية، وتابع برنامجك التشغيلي مع الشركة المنظمة والقنوات الحكومية المعتمدة.'
+                        : 'راجع المتطلبات الصحية الرسمية والتطعيمات قبل السفر، واتبع تعليمات الجهة الحكومية والحملة المنظمة.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         height: 1.55,
                         color: const Color(0xFF616A64),

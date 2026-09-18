@@ -469,20 +469,101 @@ class _SeasonsSection extends StatelessWidget {
             label: const Text('تهيئة موسم 1448 التجريبي'),
           ),
       ],
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: repository.seasons(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const _LoadingView();
-          }
-          if (snapshot.hasError) return _ErrorView(snapshot.error);
-          final rows = snapshot.data ?? const <Map<String, dynamic>>[];
-          return _RecordCollection(
-            emptyLabel: 'لا توجد مواسم مسجلة.',
-            rows: rows,
-            modelBuilder: _seasonModel,
-          );
-        },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _DualAuthorityModelCard(),
+          const SizedBox(height: 16),
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: repository.seasons(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const _LoadingView();
+              }
+              if (snapshot.hasError) return _ErrorView(snapshot.error);
+              final rows = snapshot.data ?? const <Map<String, dynamic>>[];
+              return _RecordCollection(
+                emptyLabel: 'لا توجد مواسم مسجلة.',
+                rows: rows,
+                modelBuilder: _seasonModel,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DualAuthorityModelCard extends StatelessWidget {
+  const _DualAuthorityModelCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: const ValueKey('dual-authority-model-card'),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'نموذج التشغيل حسب نوع الموسم',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 12),
+            const Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _AuthorityModeTile(
+                  icon: Icons.account_balance_outlined,
+                  title: 'الحج',
+                  lead: 'إشراف حكومي مباشر',
+                  coordination: 'تنسيق تشغيلي مع الحملات والشركات',
+                ),
+                _AuthorityModeTile(
+                  icon: Icons.business_outlined,
+                  title: 'العمرة',
+                  lead: 'إشراف تشغيلي من الشركة',
+                  coordination: 'تنسيق والتزام بالمتطلبات الحكومية',
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'هذه الحدود وصف تشغيلي للمنتج ولا تمنح أي صلاحية جديدة، ولا تفعّل بيانات حقيقية أو تكاملًا رسميًا تلقائيًا.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthorityModeTile extends StatelessWidget {
+  const _AuthorityModeTile({
+    required this.icon,
+    required this.title,
+    required this.lead,
+    required this.coordination,
+  });
+  final IconData icon;
+  final String title;
+  final String lead;
+  final String coordination;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 320,
+      child: ListTile(
+        leading: CircleAvatar(child: Icon(icon)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: Text('$lead\n$coordination'),
+        isThreeLine: true,
       ),
     );
   }
