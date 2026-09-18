@@ -5,9 +5,12 @@ import '../../domain/models/journey_overview.dart';
 import '../../domain/models/journey_step.dart';
 import '../../domain/models/pilgrim_profile.dart';
 import '../../domain/repositories/nusuk_repository.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
 
 final nusukRepositoryProvider = Provider<NusukRepository>((ref) {
-  return const DemoNusukRepository();
+  final settings = ref.watch(appSettingsControllerProvider).value;
+  final ritualPath = settings?.preferredRitualPath ?? 'hajj';
+  return DemoNusukRepository(ritualPath: ritualPath);
 });
 
 final pilgrimProfileProvider = FutureProvider<PilgrimProfile>((ref) async {

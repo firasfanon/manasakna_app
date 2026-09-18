@@ -4,9 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('Wave D release runbook preserves governance boundaries', () {
-    final runbook =
-        File('docs/WAVE_D_OPERABILITY_RELEASE_ROLLBACK_V1.md')
-            .readAsStringSync();
+    final runbook = File('docs/WAVE_D_OPERABILITY_RELEASE_ROLLBACK_V1.md')
+        .readAsStringSync();
 
     expect(runbook, contains('PRODUCTION=NO'));
     expect(runbook, contains('STORE_RELEASE=NO'));
@@ -22,9 +21,9 @@ void main() {
   });
 
   test('CI is validation-only and contains no deployment or store step', () {
-    final workflow =
-        File('../.github/workflows/manasakna-wave-d-ci.yml')
-            .readAsStringSync();
+    final workflow = File('../.github/workflows/manasakna-wave-d-ci.yml')
+        .readAsStringSync()
+        .replaceAll('\r\n', '\n');
 
     expect(workflow, contains('flutter test'));
     expect(workflow, contains('flutter build web --release'));
@@ -38,8 +37,7 @@ void main() {
     expect(workflow.toLowerCase(), isNot(contains('app store')));
     expect(workflow, isNot(contains('secrets.')));
 
-    final buildGradle =
-        File('android/app/build.gradle').readAsStringSync();
+    final buildGradle = File('android/app/build.gradle').readAsStringSync();
 
     expect(
       workflow,

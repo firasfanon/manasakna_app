@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/config/munasakna_environment.dart';
 import '../../../../app/router/munasakna_routes.dart';
 import '../../../../app/theme/munasakna_theme.dart';
 import '../../../../core/widgets/munasakna_bottom_nav.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
 
-class MunasaknaHomePage extends StatelessWidget {
+class MunasaknaHomePage extends ConsumerWidget {
   const MunasaknaHomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsControllerProvider).value;
+    final isUmrah = settings?.preferredRitualPath == 'umrah';
     return Scaffold(
       extendBody: false,
       bottomNavigationBar: const MunasaknaBottomNav(selectedIndex: 2),
@@ -34,16 +38,17 @@ class MunasaknaHomePage extends StatelessWidget {
               _HomeTopBar(
                   onProfile: () => context.push(MunasaknaRoutes.profile)),
               const SizedBox(height: 10),
-              const _HeroKaabaPanel(),
+              _HeroKaabaPanel(isUmrah: isUmrah),
               const SizedBox(height: 18),
               _JourneyShortcutCard(
+                  isUmrah: isUmrah,
                   onTap: () => context.push(MunasaknaRoutes.journey)),
               const SizedBox(height: 20),
               const _HomeSectionTitle(title: 'خدمات سريعة'),
               const SizedBox(height: 12),
-              const _QuickServicesGrid(),
+              _QuickServicesGrid(isUmrah: isUmrah),
               const SizedBox(height: 18),
-              const _QuranInspirationCard(),
+              _QuranInspirationCard(isUmrah: isUmrah),
               const SizedBox(height: 10),
               const Text(
                 'خدمات الحج والعمرة',
@@ -111,7 +116,9 @@ class _HomeTopBar extends StatelessWidget {
 }
 
 class _HeroKaabaPanel extends StatelessWidget {
-  const _HeroKaabaPanel();
+  const _HeroKaabaPanel({required this.isUmrah});
+
+  final bool isUmrah;
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +168,9 @@ class _HeroKaabaPanel extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'تطبيقك الذكي لخدمة\nرحلة الحج خطوة بخطوة',
+                isUmrah
+                    ? 'رفيقك الذكي لخدمة\\nرحلة العمرة خطوة بخطوة'
+                    : 'رفيقك الذكي لخدمة\\nرحلة الحج خطوة بخطوة',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color:
@@ -179,8 +188,9 @@ class _HeroKaabaPanel extends StatelessWidget {
 }
 
 class _JourneyShortcutCard extends StatelessWidget {
-  const _JourneyShortcutCard({required this.onTap});
+  const _JourneyShortcutCard({required this.isUmrah, required this.onTap});
 
+  final bool isUmrah;
   final VoidCallback onTap;
 
   @override
@@ -235,7 +245,7 @@ class _JourneyShortcutCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'رحلتي 1448',
+                      isUmrah ? 'رحلة العمرة' : 'رحلتي 1448',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
@@ -243,7 +253,9 @@ class _JourneyShortcutCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      'تابع مراحل رحلتك واستعدادك داخل مناسكنا، مع إظهار أي اعتماد رسمي على نسك بوضوح عند الحاجة.',
+                      isUmrah
+                          ? 'تابع الاستعداد والسفر والمناسك والعودة مع شركتك المنظمة، مع إبقاء المتطلبات الرسمية واضحة.'
+                          : 'تابع مراحل الحج تحت الإشراف الحكومي وبالتنسيق مع حملتك، مع إظهار أي اعتماد رسمي بوضوح.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white.withValues(alpha: 0.88),
                             fontWeight: FontWeight.w700,
@@ -339,7 +351,9 @@ class _HomeSectionTitle extends StatelessWidget {
 }
 
 class _QuickServicesGrid extends StatelessWidget {
-  const _QuickServicesGrid();
+  const _QuickServicesGrid({required this.isUmrah});
+
+  final bool isUmrah;
 
   static const _items = [
     _VisualQuickService(
@@ -456,8 +470,17 @@ class _QuickServicesGrid extends StatelessWidget {
             crossAxisSpacing: 12,
             childAspectRatio: childAspectRatio,
           ),
-          itemBuilder: (context, index) =>
-              _QuickServiceCard(item: _items[index]),
+          itemBuilder: (context, index) {
+            var item = _items[index];
+            if (isUmrah && index == 1) {
+              item = const _VisualQuickService('برنامج العمرة',
+                  Icons.fact_check_rounded, MunasaknaRoutes.rituals);
+            } else if (isUmrah && index == 3) {
+              item = const _VisualQuickService('جدول الرحلة',
+                  Icons.event_note_rounded, MunasaknaRoutes.journey);
+            }
+            return _QuickServiceCard(item: item);
+          },
         );
       },
     );
@@ -521,7 +544,9 @@ class _QuickServiceCard extends StatelessWidget {
 }
 
 class _QuranInspirationCard extends StatelessWidget {
-  const _QuranInspirationCard();
+  const _QuranInspirationCard({required this.isUmrah});
+
+  final bool isUmrah;
 
   @override
   Widget build(BuildContext context) {
@@ -546,7 +571,9 @@ class _QuranInspirationCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22),
             child: Text(
-              'إِنَّ الْحَجَّ أَشْهُرٌ مَّعْلُومَاتٌ\nفَمَن فَرَضَ فِيهِنَّ الْحَجَّ فَلَا رَفَثَ وَلَا فُسُوقَ\nوَلَا جِدَالَ فِي الْحَجِّ\n(سورة البقرة: 197)',
+              isUmrah
+                  ? 'وَأَتِمُّوا الْحَجَّ وَالْعُمْرَةَ لِلَّهِ\\n(سورة البقرة: 196)'
+                  : 'إِنَّ الْحَجَّ أَشْهُرٌ مَّعْلُومَاتٌ\\nفَمَن فَرَضَ فِيهِنَّ الْحَجَّ فَلَا رَفَثَ وَلَا فُسُوقَ\\nوَلَا جِدَالَ فِي الْحَجِّ\\n(سورة البقرة: 197)',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: Colors.white,
