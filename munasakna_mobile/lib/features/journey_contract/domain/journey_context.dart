@@ -128,11 +128,14 @@ class JourneyContext {
         !authorityProvenance.isAuthoritative) {
       throw const FormatException('AMBIGUOUS_EXTERNAL_AUTHORITY');
     }
-    if (journeyType == JourneyType.hajj &&
-        sourceAuthority == AuthorityKind.commercialCompany) {
-      throw const FormatException(
-        'COMMERCIAL_COMPANY_CANNOT_OWN_HAJJ_AUTHORITY',
-      );
+    if (journeyType == JourneyType.hajj) {
+      if (sourceAuthority != AuthorityKind.government ||
+          !authorityProvenance.isAuthoritative) {
+        throw const FormatException(
+          'HAJJ_ROOT_REQUIRES_AUTHORITATIVE_GOVERNMENT',
+        );
+      }
+      _validateHajjGovernmentPlane();
     }
     if (journeyType == JourneyType.umrah &&
         sourceAuthority == AuthorityKind.government &&
@@ -141,6 +144,49 @@ class JourneyContext {
     }
     if (freshness == JourneyFreshness.unknown) {
       throw const FormatException('UNKNOWN_FRESHNESS');
+    }
+  }
+
+  void _validateHajjGovernmentPlane() {
+    final sections = <JourneySection<Object?>>[
+      organizationContext,
+      group,
+      supervisor,
+      accommodation,
+      room,
+      transport,
+      flights,
+      schedule,
+      meetingPoints,
+      documents,
+      notifications,
+      support,
+      guidance,
+    ];
+    for (final section in sections) {
+      if (section.provenance.sourceAuthority ==
+          AuthorityKind.commercialCompany) {
+        throw const FormatException(
+          'COMMERCIAL_COMPANY_PROHIBITED_IN_HAJJ_PLANE',
+        );
+      }
+      if (section.provenance.sourceAuthority ==
+              AuthorityKind.externalProvider &&
+          !section.provenance.isAuthoritative) {
+        throw const FormatException(
+          'AMBIGUOUS_HAJJ_EXTERNAL_SECTION_AUTHORITY',
+        );
+      }
+    }
+    for (final section in <JourneySection<Object?>>[
+      organizationContext,
+      group,
+    ]) {
+      if (section.provenance.sourceAuthority != AuthorityKind.government &&
+          section.provenance.sourceAuthority !=
+              AuthorityKind.delegatedCompany) {
+        throw const FormatException('INVALID_HAJJ_ORGANIZATION_AUTHORITY');
+      }
     }
   }
 

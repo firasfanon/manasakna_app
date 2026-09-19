@@ -90,4 +90,37 @@ void main() {
       );
     });
   });
+  test('Hajj root rejects delegated company as sovereign authority', () async {
+    const provider = SyntheticJourneyContextProvider(
+      type: JourneyType.hajj,
+      overrideAuthority: AuthorityKind.delegatedCompany,
+    );
+    await expectLater(
+      const JourneyContextGateway(provider).load(),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          'HAJJ_ROOT_REQUIRES_AUTHORITATIVE_GOVERNMENT',
+        ),
+      ),
+    );
+  });
+
+  test('Hajj root rejects non-authoritative government source', () async {
+    const provider = SyntheticJourneyContextProvider(
+      type: JourneyType.hajj,
+      authoritative: false,
+    );
+    await expectLater(
+      const JourneyContextGateway(provider).load(),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          'HAJJ_ROOT_REQUIRES_AUTHORITATIVE_GOVERNMENT',
+        ),
+      ),
+    );
+  });
 }
