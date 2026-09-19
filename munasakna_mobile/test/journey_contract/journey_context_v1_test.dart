@@ -91,12 +91,12 @@ void main() {
     });
   });
   test('Hajj root rejects delegated company as sovereign authority', () async {
-    final provider = SyntheticJourneyContextProvider(
+    const provider = SyntheticJourneyContextProvider(
       type: JourneyType.hajj,
       overrideAuthority: AuthorityKind.delegatedCompany,
     );
     await expectLater(
-      JourneyContextGateway(provider).load(),
+      const JourneyContextGateway(provider).load(),
       throwsA(
         isA<FormatException>().having(
           (error) => error.message,
@@ -108,12 +108,12 @@ void main() {
   });
 
   test('Hajj root rejects non-authoritative government source', () async {
-    final provider = SyntheticJourneyContextProvider(
+    const provider = SyntheticJourneyContextProvider(
       type: JourneyType.hajj,
       authoritative: false,
     );
     await expectLater(
-      JourneyContextGateway(provider).load(),
+      const JourneyContextGateway(provider).load(),
       throwsA(
         isA<FormatException>().having(
           (error) => error.message,

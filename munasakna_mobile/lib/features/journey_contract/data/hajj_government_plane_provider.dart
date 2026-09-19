@@ -42,7 +42,7 @@ class HajjGovernmentPlaneProvider implements JourneyContextProvider {
   final HajjGovernmentSource government;
   final HajjDelegatedOperationsSource? delegatedOperations;
   @override
-  String get providerId => 'hajj-government-plane-v1:' + government.sourceId;
+  String get providerId => 'hajj-government-plane-v1:${government.sourceId}';
   @override
   Future<JourneyContext> loadJourneyContext() async {
     final root = await government.loadGovernmentJourney();
