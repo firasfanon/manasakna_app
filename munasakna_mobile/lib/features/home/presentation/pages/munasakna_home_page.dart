@@ -7,6 +7,7 @@ import '../../../../app/router/munasakna_routes.dart';
 import '../../../../app/theme/munasakna_theme.dart';
 import '../../../../core/widgets/munasakna_bottom_nav.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
+import '../../../unified_journey/presentation/unified_journey_switcher.dart';
 
 class MunasaknaHomePage extends ConsumerWidget {
   const MunasaknaHomePage({super.key});
@@ -43,6 +44,8 @@ class MunasaknaHomePage extends ConsumerWidget {
               _JourneyShortcutCard(
                   isUmrah: isUmrah,
                   onTap: () => context.push(MunasaknaRoutes.journey)),
+              const SizedBox(height: 12),
+              const UnifiedJourneySwitcherCard(compact: true),
               const SizedBox(height: 20),
               const _HomeSectionTitle(title: 'خدمات سريعة'),
               const SizedBox(height: 12),
