@@ -9,6 +9,8 @@ import '../../../nusuk_data/domain/models/journey_overview.dart';
 import '../../../nusuk_data/domain/models/journey_step.dart';
 import '../../../nusuk_data/presentation/providers/nusuk_providers.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
+import '../../../unified_journey/presentation/unified_journey_providers.dart';
+import '../../../unified_journey/presentation/unified_journey_switcher.dart';
 
 class JourneyPage extends ConsumerWidget {
   const JourneyPage({super.key});
@@ -17,6 +19,7 @@ class JourneyPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsControllerProvider).value;
     final isUmrah = settings?.preferredRitualPath == 'umrah';
+    final unifiedJourneyAsync = ref.watch(unifiedJourneyResolutionProvider);
     final overviewAsync = ref.watch(journeyOverviewProvider);
     final stepsAsync = ref.watch(journeyStepsProvider);
 
@@ -32,21 +35,61 @@ class JourneyPage extends ConsumerWidget {
           ),
         ),
         child: SafeArea(
-          child: overviewAsync.when(
-            data: (overview) => stepsAsync.when(
-              data: (steps) => _JourneyVisualContent(
-                  overview: overview, steps: steps, isUmrah: isUmrah),
-              loading: () => const _CenteredLoader(),
-              error: (_, __) => const _JourneyError(
-                  message:
-                      'تعذر تحميل مراحل الرحلة الآن. حاول مرة أخرى لاحقًا.'),
-            ),
+          child: unifiedJourneyAsync.when(
+            data: (resolution) {
+              if (resolution.selected == null) {
+                return const _JourneyAuthoritySelectionRequired();
+              }
+              return overviewAsync.when(
+                data: (overview) => stepsAsync.when(
+                  data: (steps) => _JourneyVisualContent(
+                    overview: overview,
+                    steps: steps,
+                    isUmrah: isUmrah,
+                  ),
+                  loading: () => const _CenteredLoader(),
+                  error: (_, __) => const _JourneyError(
+                    message:
+                        'تعذر تحميل مراحل الرحلة الآن. حاول مرة أخرى لاحقًا.',
+                  ),
+                ),
+                loading: () => const _CenteredLoader(),
+                error: (_, __) => const _JourneyError(
+                  message: 'تعذر تحميل ملخص الرحلة الآن. حاول مرة أخرى لاحقًا.',
+                ),
+              );
+            },
             loading: () => const _CenteredLoader(),
             error: (_, __) => const _JourneyError(
-                message: 'تعذر تحميل ملخص الرحلة الآن. حاول مرة أخرى لاحقًا.'),
+              message:
+                  'تعذر تحديد مصدر الرحلة بأمان. لم يتم عرض بيانات قد تسبب التباسًا في الصلاحيات.',
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _JourneyAuthoritySelectionRequired extends StatelessWidget {
+  const _JourneyAuthoritySelectionRequired();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 24, 18, 112),
+      children: [
+        Text(
+          'اختر رحلتك',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: MunasaknaTheme.deepHaramGreen,
+                fontWeight: FontWeight.w900,
+              ),
+        ),
+        const SizedBox(height: 16),
+        const UnifiedJourneySwitcherCard(),
+      ],
     );
   }
 }
@@ -83,6 +126,11 @@ class _JourneyVisualContent extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18),
           child: _CurrentNextCard(currentStep: currentStep, overview: overview),
+        ),
+        const SizedBox(height: 14),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 18),
+          child: UnifiedJourneySwitcherCard(),
         ),
         const SizedBox(height: 18),
         Padding(
