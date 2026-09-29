@@ -54,6 +54,20 @@ jobs:
           chmod +x android/gradlew
           android/gradlew --version
 
+      - name: Phase 10 canonical formatter diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          dart format lib/features/official_external_integrations/domain/official_external_integrations.dart test/phase10/official_external_integrations_test.dart
+          echo '===APP_DOMAIN_B64_START==='
+          base64 -w0 lib/features/official_external_integrations/domain/official_external_integrations.dart
+          echo
+          echo '===APP_DOMAIN_B64_END==='
+          echo '===APP_TEST_B64_START==='
+          base64 -w0 test/phase10/official_external_integrations_test.dart
+          echo
+          echo '===APP_TEST_B64_END==='
+
       - name: Phase 10 provider admission gates
         run: flutter test test/phase10
 
