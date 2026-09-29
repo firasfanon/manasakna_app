@@ -11,41 +11,43 @@ ProviderRequest request({
   String idempotencyKey = 'idem-001',
   bool syntheticFixture = true,
   Map<String, Object?> payload = const {},
-}) => ProviderRequest(
-  contractVersion: phase10IntegrationContractVersion,
-  requestId: requestId,
-  idempotencyKey: idempotencyKey,
-  requestedAt: DateTime.utc(2026, 9, 29, 20),
-  providerId: providerId,
-  operation: operation,
-  subjectRef: 'subject-synthetic-1',
-  dataClassification: 'synthetic_test',
-  syntheticFixture: syntheticFixture,
-  payload: payload,
-);
+}) =>
+    ProviderRequest(
+      contractVersion: phase10IntegrationContractVersion,
+      requestId: requestId,
+      idempotencyKey: idempotencyKey,
+      requestedAt: DateTime.utc(2026, 9, 29, 20),
+      providerId: providerId,
+      operation: operation,
+      subjectRef: 'subject-synthetic-1',
+      dataClassification: 'synthetic_test',
+      syntheticFixture: syntheticFixture,
+      payload: payload,
+    );
 
 ProviderIntegrationClient client(
   ProviderAdapterRegistry registry, {
   ProviderResiliencePolicy policy = const ProviderResiliencePolicy(),
-}) => ProviderIntegrationClient(
-  registry: registry,
-  idempotencyStore: MemoryProviderIdempotencyStore(),
-  auditSink: MemoryProviderAuditSink(),
-  policy: policy,
-  clock: () => DateTime.utc(2026, 9, 29, 20, 30),
-);
+}) =>
+    ProviderIntegrationClient(
+      registry: registry,
+      idempotencyStore: MemoryProviderIdempotencyStore(),
+      auditSink: MemoryProviderAuditSink(),
+      policy: policy,
+      clock: () => DateTime.utc(2026, 9, 29, 20, 30),
+    );
 
 final class _FailingAdapter implements ProviderAdapter {
   int calls = 0;
 
   @override
   ProviderDescriptor get descriptor => const ProviderDescriptor(
-    providerId: 'failing-synthetic-v1',
-    providerClass: ExternalProviderClass.travel,
-    authority: ProviderAuthority.commercialProvider,
-    sourceOfTruthDomain: 'synthetic_failure',
-    allowedOperations: {'travel.availability.preview'},
-  );
+        providerId: 'failing-synthetic-v1',
+        providerClass: ExternalProviderClass.travel,
+        authority: ProviderAuthority.commercialProvider,
+        sourceOfTruthDomain: 'synthetic_failure',
+        allowedOperations: {'travel.availability.preview'},
+      );
 
   @override
   Future<ProviderResponse> execute(ProviderRequest request) async {
@@ -56,13 +58,11 @@ final class _FailingAdapter implements ProviderAdapter {
 
 void main() {
   test('Phase 10 manifest is synthetic and real-provider closed', () {
-    final manifest =
-        jsonDecode(
-              File(
-                '../../docs/MANASAKNA_PHASE_10_PROVIDER_INTEGRATION_CONTRACT_V1.json',
-              ).readAsStringSync(),
-            )
-            as Map<String, dynamic>;
+    final manifest = jsonDecode(
+      File(
+        '../docs/MANASAKNA_PHASE_10_PROVIDER_INTEGRATION_CONTRACT_V1.json',
+      ).readAsStringSync(),
+    ) as Map<String, dynamic>;
 
     expect(manifest['contract_version'], phase10IntegrationContractVersion);
     expect(manifest['execution_mode'], phase10ExecutionMode);
@@ -126,9 +126,8 @@ void main() {
     'unmarked real provider data is rejected before adapter execution',
     () async {
       final registry = ProviderAdapterRegistry.synthetic();
-      final adapter =
-          registry.require('official-regulatory-synthetic-v1')
-              as SyntheticOfficialRegulatoryAdapter;
+      final adapter = registry.require('official-regulatory-synthetic-v1')
+          as SyntheticOfficialRegulatoryAdapter;
 
       await expectLater(
         client(registry).execute(request(syntheticFixture: false)),
