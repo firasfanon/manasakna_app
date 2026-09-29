@@ -82,6 +82,9 @@ jobs:
       - name: Web JS release
         run: flutter build web --release
 
+      - name: Phase 9 synthetic gateway preview web
+        run: flutter build web --release -t lib/phase9_preview_main.dart
+
       - name: Android APK release
         run: flutter build apk --release
 
