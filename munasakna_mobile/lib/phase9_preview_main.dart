@@ -52,30 +52,50 @@ class _Phase9PreviewAppState extends State<Phase9PreviewApp> {
                 return const Center(child: CircularProgressIndicator());
               }
               final selected = resolution.selected;
-              return ListView(
-                padding: const EdgeInsets.all(18),
-                children: [
-                  Text(
-                    'Phase 9 — تكامل دون دمج السلطات',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFF064B3E),
-                          fontWeight: FontWeight.w900,
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth <= 420;
+                  final horizontalPadding = compact ? 12.0 : 18.0;
+
+                  return ListView(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      18,
+                      horizontalPadding,
+                      18,
+                    ),
+                    children: [
+                      Text(
+                        'Phase 9 — تكامل دون دمج السلطات',
+                        softWrap: true,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: const Color(0xFF064B3E),
+                                  fontWeight: FontWeight.w900,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'تصل بيانات العمرة عبر عقد محدود، بينما تبقى بيانات الحج الرسمية تحت مصدرها الحكومي.',
+                        softWrap: true,
+                      ),
+                      const SizedBox(height: 18),
+                      UnifiedJourneySwitcherView(
+                        resolution: resolution,
+                        compact: compact,
+                        onSelect: (type) =>
+                            setState(() => selectedType = type),
+                      ),
+                      if (selected != null) ...[
+                        const SizedBox(height: 18),
+                        _GatewayPreviewCard(
+                          candidate: selected,
+                          compact: compact,
                         ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'تصل بيانات العمرة عبر عقد محدود، بينما تبقى بيانات الحج الرسمية تحت مصدرها الحكومي.',
-                  ),
-                  const SizedBox(height: 18),
-                  UnifiedJourneySwitcherView(
-                    resolution: resolution,
-                    onSelect: (type) => setState(() => selectedType = type),
-                  ),
-                  if (selected != null) ...[
-                    const SizedBox(height: 18),
-                    _GatewayPreviewCard(candidate: selected),
-                  ],
-                ],
+                      ],
+                    ],
+                  );
+                },
               );
             },
           ),
@@ -86,9 +106,13 @@ class _Phase9PreviewAppState extends State<Phase9PreviewApp> {
 }
 
 class _GatewayPreviewCard extends StatelessWidget {
-  const _GatewayPreviewCard({required this.candidate});
+  const _GatewayPreviewCard({
+    required this.candidate,
+    required this.compact,
+  });
 
   final UnifiedJourneyCandidate candidate;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +121,7 @@ class _GatewayPreviewCard extends StatelessWidget {
         candidate.context.travelerContext['cross_plane_delivery'] == true;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(compact ? 14 : 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -117,14 +141,31 @@ class _GatewayPreviewCard extends StatelessWidget {
               isUmrah
                   ? 'إسقاط بيانات المسافر عبر بوابة Phase 9؛ لا يوجد وصول مباشر إلى قاعدة بيانات الشركة.'
                   : 'المصدر الحكومي للحج مستقل عن بوابة العمرة التجارية.',
+              softWrap: true,
             ),
             if (isUmrah) ...[
               const SizedBox(height: 12),
-              Chip(
-                label: Text(
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                child: Text(
                   delivered
                       ? 'Cross-plane projection: فعال تجريبيًا'
                       : 'Cross-plane projection: غير فعال',
+                  softWrap: true,
+                  textAlign: TextAlign.start,
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ],
