@@ -11,7 +11,16 @@ class UnifiedJourneyCandidate {
 
   String get modeLabelAr => type == JourneyType.hajj ? 'الحج' : 'العمرة';
 
+  bool get isSynthetic =>
+      context.travelerContext['synthetic'] == true ||
+      context.authorityProvenance.sourceId.startsWith('synthetic-');
+
   String get sourceLabelAr {
+    if (isSynthetic) {
+      return type == JourneyType.hajj
+          ? 'بيانات تجريبية تحاكي المصدر الحكومي'
+          : 'بيانات تجريبية تحاكي الشركة المنظمة';
+    }
     if (type == JourneyType.hajj &&
         context.sourceAuthority == AuthorityKind.government &&
         context.authorityProvenance.isAuthoritative) {
@@ -29,6 +38,16 @@ class UnifiedJourneyCandidate {
   }
 
   String get authorityBadgeAr {
+    if (isSynthetic) {
+      switch (context.sourceAuthority) {
+        case AuthorityKind.government:
+          return 'محاكاة حكومية';
+        case AuthorityKind.commercialCompany:
+          return 'محاكاة شركة عمرة';
+        default:
+          return 'بيانات تجريبية';
+      }
+    }
     switch (context.sourceAuthority) {
       case AuthorityKind.government:
         return 'حكومي';
@@ -44,6 +63,18 @@ class UnifiedJourneyCandidate {
   }
 
   String get freshnessLabelAr {
+    if (isSynthetic) {
+      switch (freshness) {
+        case JourneyFreshness.fresh:
+          return 'بيانات اختبار';
+        case JourneyFreshness.stale:
+          return 'بيانات اختبار بحاجة إلى تحديث';
+        case JourneyFreshness.offlineSnapshot:
+          return 'بيانات اختبار محفوظة للعمل دون اتصال';
+        case JourneyFreshness.unknown:
+          return 'بيانات اختبار بحالة غير معروفة';
+      }
+    }
     switch (freshness) {
       case JourneyFreshness.fresh:
         return 'محدّث';
@@ -57,6 +88,7 @@ class UnifiedJourneyCandidate {
   }
 
   bool get isOfficialHajj =>
+      !isSynthetic &&
       type == JourneyType.hajj &&
       context.sourceAuthority == AuthorityKind.government &&
       context.authorityProvenance.isAuthoritative;

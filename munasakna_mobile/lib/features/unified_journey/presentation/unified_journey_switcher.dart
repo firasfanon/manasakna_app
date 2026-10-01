@@ -254,9 +254,11 @@ class _JourneyAuthoritySummary extends StatelessWidget {
                 if (!compact) ...[
                   const SizedBox(height: 6),
                   Text(
-                    candidate.isCommercialUmrah
-                        ? 'هذه معلومات تشغيلية للمعتمر من الشركة المنظمة، وليست حالة حج رسمية.'
-                        : 'المعلومات الرسمية المرتبطة بالحج تبقى تحت سلطة الجهة الحكومية.',
+                    candidate.isSynthetic
+                        ? 'هذه بيانات اختبار غير إنتاجية؛ لا تمثل سجلًا حكوميًا أو تجاريًا حيًا.'
+                        : candidate.isCommercialUmrah
+                            ? 'هذه معلومات تشغيلية للمعتمر من الشركة المنظمة، وليست حالة حج رسمية.'
+                            : 'المعلومات الرسمية المرتبطة بالحج تبقى تحت سلطة الجهة الحكومية.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: const Color(0xFF5C665F),
                           height: 1.45,

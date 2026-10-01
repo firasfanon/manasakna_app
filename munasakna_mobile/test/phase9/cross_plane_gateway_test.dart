@@ -176,7 +176,10 @@ void main() {
     );
     expect(resolution.candidates, hasLength(2));
     expect(resolution.selected?.isCommercialUmrah, isTrue);
-    expect(resolution.candidateFor(JourneyType.hajj).isOfficialHajj, isTrue);
+    final hajj = resolution.candidateFor(JourneyType.hajj);
+    expect(hajj.context.sourceAuthority, AuthorityKind.government);
+    expect(hajj.isSynthetic, isTrue);
+    expect(hajj.isOfficialHajj, isFalse);
   });
 
   test('gateway source has no direct Business database dependency', () {

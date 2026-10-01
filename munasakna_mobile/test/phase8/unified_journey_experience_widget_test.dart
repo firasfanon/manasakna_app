@@ -51,9 +51,9 @@ void main() {
 
     expect(find.text('الحج'), findsOneWidget);
     expect(find.text('العمرة'), findsOneWidget);
-    expect(find.text('معلومة رسمية من الجهة الحكومية'), findsOneWidget);
+    expect(find.text('بيانات تجريبية تحاكي المصدر الحكومي'), findsOneWidget);
     expect(
-      find.textContaining('المعلومات الرسمية المرتبطة بالحج'),
+      find.textContaining('بيانات اختبار غير إنتاجية'),
       findsOneWidget,
     );
   });
@@ -135,6 +135,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('معلومة رسمية من الجهة الحكومية'), findsOneWidget);
+    expect(find.text('بيانات تجريبية تحاكي المصدر الحكومي'), findsOneWidget);
   });
 }

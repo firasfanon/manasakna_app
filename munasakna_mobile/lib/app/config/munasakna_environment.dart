@@ -14,6 +14,10 @@ class MunasaknaEnvironment {
   /// No login is required until an authorized real-data provider,
   /// access controls, and platform APIs are ready.
   static const bool developmentMode = true;
+  static const bool internalToolsEnabled = bool.fromEnvironment(
+    'MANASAKNA_INTERNAL_TOOLS',
+    defaultValue: false,
+  );
   static const bool isLocalOnly = true;
   static const bool hasLogin = false;
   static const bool usesExternalDatabase = false;
