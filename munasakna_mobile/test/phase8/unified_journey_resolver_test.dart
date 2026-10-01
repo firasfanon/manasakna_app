@@ -44,7 +44,10 @@ void main() {
 
     expect(resolution.candidates, hasLength(2));
     expect(resolution.selected?.type, JourneyType.hajj);
-    expect(resolution.selected?.isOfficialHajj, isTrue);
+    expect(
+        resolution.selected?.context.sourceAuthority, AuthorityKind.government);
+    expect(resolution.selected?.isSynthetic, isTrue);
+    expect(resolution.selected?.isOfficialHajj, isFalse);
 
     final umrah = resolution.candidateFor(JourneyType.umrah);
     expect(umrah.isCommercialUmrah, isTrue);

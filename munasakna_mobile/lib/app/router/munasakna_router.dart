@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
 
+import '../config/munasakna_environment.dart';
+
 import '../../features/app_guide/presentation/pages/app_guide_page.dart';
 import '../../features/beta_readiness/presentation/pages/beta_readiness_page.dart';
 import '../../features/beta_review/presentation/pages/beta_review_page.dart';
@@ -65,8 +67,40 @@ import '../../features/nusuk_integration_handoff/presentation/pages/nusuk_integr
 import '../../features/nusuk_bridge_preview/presentation/pages/nusuk_bridge_preview_page.dart';
 import 'munasakna_routes.dart';
 
+const _phase12InternalOnlyRoutes = <String>{
+  MunasaknaRoutes.knowledgeGovernance,
+  MunasaknaRoutes.nusukReadiness,
+  MunasaknaRoutes.betaReadiness,
+  MunasaknaRoutes.betaReview,
+  MunasaknaRoutes.betaTestScenarios,
+  MunasaknaRoutes.nusukContracts,
+  MunasaknaRoutes.betaPilot,
+  MunasaknaRoutes.betaFeedback,
+  MunasaknaRoutes.releaseGates,
+  MunasaknaRoutes.betaClosureChecklist,
+  MunasaknaRoutes.storeReadiness,
+  MunasaknaRoutes.contentApprovalQueue,
+  MunasaknaRoutes.qualityRiskRegister,
+  MunasaknaRoutes.uiConsistencySweep,
+  MunasaknaRoutes.assistantSafetyHardening,
+  MunasaknaRoutes.faqExpansionApproval,
+  MunasaknaRoutes.nusukBridgeMock,
+  MunasaknaRoutes.platformReadiness,
+  MunasaknaRoutes.finalBetaSmoke,
+  MunasaknaRoutes.betaContentUxAudit,
+  MunasaknaRoutes.nusukIntegrationHandoff,
+  MunasaknaRoutes.nusukBridgePreview,
+};
+
 final GoRouter munasaknaRouter = GoRouter(
   initialLocation: MunasaknaRoutes.home,
+  redirect: (context, state) {
+    if (!MunasaknaEnvironment.internalToolsEnabled &&
+        _phase12InternalOnlyRoutes.contains(state.uri.path)) {
+      return MunasaknaRoutes.home;
+    }
+    return null;
+  },
   routes: [
     GoRoute(
         path: MunasaknaRoutes.home,
