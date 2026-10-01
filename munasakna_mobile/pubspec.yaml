@@ -27,6 +27,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+  fonts:
+    - family: NotoSansArabic
+      fonts:
+        - asset: assets/fonts/NotoSansArabic-Variable.ttf
 
 dev_dependencies:
   flutter_test:
